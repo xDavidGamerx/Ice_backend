@@ -13,3 +13,4 @@ D:\archivos\ice_backend\src\IceBackend.Application\obj\Debug\net8.0\IceBackend.A
 D:\archivos\ice_backend\src\IceBackend.Application\obj\Debug\net8.0\refint\IceBackend.Application.dll
 D:\archivos\ice_backend\src\IceBackend.Application\obj\Debug\net8.0\IceBackend.Application.pdb
 D:\archivos\ice_backend\src\IceBackend.Application\obj\Debug\net8.0\ref\IceBackend.Application.dll
+D:\archivos\ice_backend\src\IceBackend.Application\obj\Debug\net8.0\IceBackend.Application.sourcelink.json

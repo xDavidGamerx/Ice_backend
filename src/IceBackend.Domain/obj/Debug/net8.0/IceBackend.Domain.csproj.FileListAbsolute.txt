@@ -9,3 +9,4 @@ D:\archivos\ice_backend\src\IceBackend.Domain\obj\Debug\net8.0\IceBackend.Domain
 D:\archivos\ice_backend\src\IceBackend.Domain\obj\Debug\net8.0\refint\IceBackend.Domain.dll
 D:\archivos\ice_backend\src\IceBackend.Domain\obj\Debug\net8.0\IceBackend.Domain.pdb
 D:\archivos\ice_backend\src\IceBackend.Domain\obj\Debug\net8.0\ref\IceBackend.Domain.dll
+D:\archivos\ice_backend\src\IceBackend.Domain\obj\Debug\net8.0\IceBackend.Domain.sourcelink.json

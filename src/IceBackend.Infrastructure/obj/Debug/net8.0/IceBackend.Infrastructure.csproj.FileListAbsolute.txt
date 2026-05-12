@@ -15,3 +15,4 @@ D:\archivos\ice_backend\src\IceBackend.Infrastructure\obj\Debug\net8.0\IceBacken
 D:\archivos\ice_backend\src\IceBackend.Infrastructure\obj\Debug\net8.0\refint\IceBackend.Infrastructure.dll
 D:\archivos\ice_backend\src\IceBackend.Infrastructure\obj\Debug\net8.0\IceBackend.Infrastructure.pdb
 D:\archivos\ice_backend\src\IceBackend.Infrastructure\obj\Debug\net8.0\ref\IceBackend.Infrastructure.dll
+D:\archivos\ice_backend\src\IceBackend.Infrastructure\obj\Debug\net8.0\IceBackend.Infrastructure.sourcelink.json
