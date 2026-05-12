@@ -13,7 +13,11 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("IceBackend.Domain")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
+<<<<<<< HEAD
 [assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c237fc06c546c095b9e1f6fb455593fc6be0edcf")]
+=======
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+85245fe21e6e403cb7cea57c79ac2571f582f10f")]
+>>>>>>> 31e7d1f55e5583554132f9d5df1cd4182d6b4d34
 [assembly: System.Reflection.AssemblyProductAttribute("IceBackend.Domain")]
 [assembly: System.Reflection.AssemblyTitleAttribute("IceBackend.Domain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
