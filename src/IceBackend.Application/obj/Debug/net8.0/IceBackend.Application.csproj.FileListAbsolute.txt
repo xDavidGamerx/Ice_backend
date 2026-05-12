@@ -1,0 +1,15 @@
+D:\archivos\ice_backend\src\IceBackend.Application\bin\Debug\net8.0\IceBackend.Application.deps.json
+D:\archivos\ice_backend\src\IceBackend.Application\bin\Debug\net8.0\IceBackend.Application.dll
+D:\archivos\ice_backend\src\IceBackend.Application\bin\Debug\net8.0\IceBackend.Application.pdb
+D:\archivos\ice_backend\src\IceBackend.Application\bin\Debug\net8.0\IceBackend.Domain.dll
+D:\archivos\ice_backend\src\IceBackend.Application\bin\Debug\net8.0\IceBackend.Domain.pdb
+D:\archivos\ice_backend\src\IceBackend.Application\obj\Debug\net8.0\IceBackend.Application.csproj.AssemblyReference.cache
+D:\archivos\ice_backend\src\IceBackend.Application\obj\Debug\net8.0\IceBackend.Application.GeneratedMSBuildEditorConfig.editorconfig
+D:\archivos\ice_backend\src\IceBackend.Application\obj\Debug\net8.0\IceBackend.Application.AssemblyInfoInputs.cache
+D:\archivos\ice_backend\src\IceBackend.Application\obj\Debug\net8.0\IceBackend.Application.AssemblyInfo.cs
+D:\archivos\ice_backend\src\IceBackend.Application\obj\Debug\net8.0\IceBackend.Application.csproj.CoreCompileInputs.cache
+D:\archivos\ice_backend\src\IceBackend.Application\obj\Debug\net8.0\IceBacke.A04921CE.Up2Date
+D:\archivos\ice_backend\src\IceBackend.Application\obj\Debug\net8.0\IceBackend.Application.dll
+D:\archivos\ice_backend\src\IceBackend.Application\obj\Debug\net8.0\refint\IceBackend.Application.dll
+D:\archivos\ice_backend\src\IceBackend.Application\obj\Debug\net8.0\IceBackend.Application.pdb
+D:\archivos\ice_backend\src\IceBackend.Application\obj\Debug\net8.0\ref\IceBackend.Application.dll

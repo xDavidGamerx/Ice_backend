@@ -1,0 +1,271 @@
+{
+  "format": 1,
+  "restore": {
+    "D:\\archivos\\ice_backend\\src\\IceBackend.Api\\IceBackend.Api.csproj": {}
+  },
+  "projects": {
+    "D:\\archivos\\ice_backend\\src\\IceBackend.Api\\IceBackend.Api.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "D:\\archivos\\ice_backend\\src\\IceBackend.Api\\IceBackend.Api.csproj",
+        "projectName": "IceBackend.Api",
+        "projectPath": "D:\\archivos\\ice_backend\\src\\IceBackend.Api\\IceBackend.Api.csproj",
+        "packagesPath": "C:\\Users\\davis\\.nuget\\packages\\",
+        "outputPath": "D:\\archivos\\ice_backend\\src\\IceBackend.Api\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\davis\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "D:\\archivos\\ice_backend\\src\\IceBackend.Application\\IceBackend.Application.csproj": {
+                "projectPath": "D:\\archivos\\ice_backend\\src\\IceBackend.Application\\IceBackend.Application.csproj"
+              },
+              "D:\\archivos\\ice_backend\\src\\IceBackend.Infrastructure\\IceBackend.Infrastructure.csproj": {
+                "projectPath": "D:\\archivos\\ice_backend\\src\\IceBackend.Infrastructure\\IceBackend.Infrastructure.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Microsoft.AspNetCore.OpenApi": {
+              "target": "Package",
+              "version": "[8.0.27, )"
+            },
+            "Swashbuckle.AspNetCore": {
+              "target": "Package",
+              "version": "[6.6.2, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.AspNetCore.App": {
+              "privateAssets": "none"
+            },
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "D:\\dotnet\\sdk\\8.0.421/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "D:\\archivos\\ice_backend\\src\\IceBackend.Application\\IceBackend.Application.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "D:\\archivos\\ice_backend\\src\\IceBackend.Application\\IceBackend.Application.csproj",
+        "projectName": "IceBackend.Application",
+        "projectPath": "D:\\archivos\\ice_backend\\src\\IceBackend.Application\\IceBackend.Application.csproj",
+        "packagesPath": "C:\\Users\\davis\\.nuget\\packages\\",
+        "outputPath": "D:\\archivos\\ice_backend\\src\\IceBackend.Application\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\davis\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "D:\\archivos\\ice_backend\\src\\IceBackend.Domain\\IceBackend.Domain.csproj": {
+                "projectPath": "D:\\archivos\\ice_backend\\src\\IceBackend.Domain\\IceBackend.Domain.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "D:\\dotnet\\sdk\\8.0.421/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "D:\\archivos\\ice_backend\\src\\IceBackend.Domain\\IceBackend.Domain.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "D:\\archivos\\ice_backend\\src\\IceBackend.Domain\\IceBackend.Domain.csproj",
+        "projectName": "IceBackend.Domain",
+        "projectPath": "D:\\archivos\\ice_backend\\src\\IceBackend.Domain\\IceBackend.Domain.csproj",
+        "packagesPath": "C:\\Users\\davis\\.nuget\\packages\\",
+        "outputPath": "D:\\archivos\\ice_backend\\src\\IceBackend.Domain\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\davis\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "D:\\dotnet\\sdk\\8.0.421/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "D:\\archivos\\ice_backend\\src\\IceBackend.Infrastructure\\IceBackend.Infrastructure.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "D:\\archivos\\ice_backend\\src\\IceBackend.Infrastructure\\IceBackend.Infrastructure.csproj",
+        "projectName": "IceBackend.Infrastructure",
+        "projectPath": "D:\\archivos\\ice_backend\\src\\IceBackend.Infrastructure\\IceBackend.Infrastructure.csproj",
+        "packagesPath": "C:\\Users\\davis\\.nuget\\packages\\",
+        "outputPath": "D:\\archivos\\ice_backend\\src\\IceBackend.Infrastructure\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\davis\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "D:\\archivos\\ice_backend\\src\\IceBackend.Application\\IceBackend.Application.csproj": {
+                "projectPath": "D:\\archivos\\ice_backend\\src\\IceBackend.Application\\IceBackend.Application.csproj"
+              },
+              "D:\\archivos\\ice_backend\\src\\IceBackend.Domain\\IceBackend.Domain.csproj": {
+                "projectPath": "D:\\archivos\\ice_backend\\src\\IceBackend.Domain\\IceBackend.Domain.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "D:\\dotnet\\sdk\\8.0.421/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}
