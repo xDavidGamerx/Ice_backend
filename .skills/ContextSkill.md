@@ -1,5 +1,9 @@
 # ContextSkill — Guía de Contexto del Negocio ICE Launcher
 
+**Estado**: `Confirmado` (contexto vigente de negocio para este repositorio)
+
+**Alcance del repositorio (Confirmado)**: este repo (`ice_backend`) contiene **solo** el backend/API consumido por ICE Launcher. El launcher/cliente **no** está dentro de este repositorio.
+
 ## Propósito de esta skill
 
 Esta skill representa la comprensión más profunda del negocio, la intención del producto y la visión funcional humana del ecosistema ICE Launcher. No contiene detalles técnicos, arquitectura, código, endpoints, bases de datos ni implementaciones. Su propósito es servir como fuente única de verdad del contexto del negocio para cualquier persona o agente que necesite entender, discutir, documentar o tomar decisiones sobre el producto.
@@ -10,7 +14,7 @@ Leer esta skill es el primer paso obligatorio antes de proponer cualquier cambio
 
 ## Resumen general del negocio
 
-ICE Launcher es un ecosistema digital centrado en un launcher de Minecraft. El launcher ya existe como producto construido con tecnologías web empaquetadas como aplicación de escritorio mediante Electron. Funciona como un cliente moderno que consume servicios desde un backend.
+ICE Launcher es un ecosistema digital centrado en un launcher de Minecraft. El launcher existe como producto (cliente) y consume servicios desde un backend.
 
 El proyecto busca que ICE Launcher evolucione de ser simplemente un launcher técnico para abrir Minecraft a convertirse en una plataforma de experiencia alrededor del usuario. Una plataforma con identidad propia, donde el usuario tenga cuenta, presencia, personalización, historial y pertenencia a un sistema más grande.
 
@@ -144,9 +148,8 @@ Del contexto se desprenden las siguientes reglas y principios de negocio:
 ## Límites de interpretación
 
 - Este documento no define cómo se implementa técnicamente nada. No habla de endpoints, APIs, bases de datos, frameworks, servicios externos, código, variables de entorno ni infraestructura.
-- No se debe asumir que el sistema tiene funcionalidades que no están descritas aquí. Si no está en Context.md, no es parte del contexto actual.
+- No se debe asumir que el sistema tiene funcionalidades que no están descritas aquí. Si no está documentado en esta skill, no es parte del contexto de negocio vigente de este repo.
 - No se debe inventar tipos de productos, categorías, beneficios, mecánicas comerciales, flujos de usuario o comportamientos del sistema que no estén explícitamente mencionados o que no se deriven directamente de lo mencionado.
-- La mención de .NET 8 en el contexto funcional actual es una referencia al contexto técnico conocido, pero este documento no profundiza en ello ni lo utiliza como base para decisiones funcionales.
 - La existencia de un backend es conceptual. Este documento describe qué debe hacer, no cómo debe construirse.
 
 ---
