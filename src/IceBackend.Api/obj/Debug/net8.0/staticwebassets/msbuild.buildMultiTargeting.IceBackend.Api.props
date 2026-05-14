@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="..\build\IceBackend.Api.props" />
-</Project>
