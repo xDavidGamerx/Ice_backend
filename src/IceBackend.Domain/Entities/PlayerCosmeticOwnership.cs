@@ -4,12 +4,12 @@ namespace IceBackend.Domain.Entities
 {
     public class PlayerCosmeticOwnership
     {
-        public int PlayerId { get; set; }
+        public Guid PlayerId { get; set; }
         public Player Player { get; set; } = null!;
-        
-        public int CosmeticId { get; set; }
+
+        public Guid CosmeticId { get; set; }
         public CosmeticAsset Cosmetic { get; set; } = null!;
-        
+
         public string ProviderPaymentId { get; set; } = null!;
         public DateTime AcquiredAt { get; set; }
     }

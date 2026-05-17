@@ -5,8 +5,8 @@ namespace IceBackend.Domain.Entities
 {
     public class ExternalAuth
     {
-        public int Id { get; set; }
-        public int PlayerId { get; set; }
+        public Guid Id { get; set; }
+        public Guid PlayerId { get; set; }
         public Player Player { get; set; } = null!;
         public AuthProvider Provider { get; set; }
         public string ExternalId { get; set; } = null!;

@@ -6,7 +6,7 @@ namespace IceBackend.Domain.Entities
 {
     public class CosmeticAsset
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public CosmeticType CosmeticType { get; set; }
         public string DisplayName { get; set; } = null!;
         public string AssetKey { get; set; } = null!;
