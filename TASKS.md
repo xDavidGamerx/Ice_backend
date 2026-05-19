@@ -10,8 +10,11 @@ Este documento contiene la lista de tareas pendientes del proyecto, organizadas 
 ## 2. Autenticación, Seguridad e Infraestructura Asíncrona
 - [x] **Configuración de Redis**: Añadir conexión en `appsettings.json` y configurar `AddStackExchangeRedisCache`. (Completado).
 - [x] **Gestión de Sesiones**: Implementar persistencia de `SessionToken` en Redis con abstracción `ISessionCache`. (Completado).
-- [ ] **Infraestructura de Webhooks Idempotentes**: Crear sistema de recepción de eventos (pagos/rangos) con verificación de firmas y procesamiento idempotente. (Nueva tarea exigida).
-- [ ] **Proveedores Externos**: Implementar lógica para vincular cuentas de Microsoft y Google.
+- [x] **Infraestructura de Webhooks Idempotentes (Stripe)**:
+    - [x] **Middleware de Validación**: Implementar verificación de firmas criptográficas (Stripe-Signature).
+    - [x] **Barrera de Idempotencia Híbrida**: Implementar check rápido en Redis y persistencia única en la tabla `PaymentEvent`.
+    - [x] **Event Handlers Transaccionales**: Lógica para `invoice.paid`, `subscription.deleted` con purga automática de caché de usuario.
+- [x] **Proveedores Externos**: Implementar flujo OAuth2 PKCE para Microsoft y Google con doble barrera anti-CSRF y anti-replay. (Completado).
 
 ## 3. Sistema de Cosméticos y Negocio
 - [ ] **API de Assets**: Desarrollar endpoints para entrega de cosméticos (Asset Delivery API).

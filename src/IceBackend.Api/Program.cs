@@ -8,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -27,8 +28,16 @@ builder.Services.AddStackExchangeRedisCache(options =>
 // Register Application Services
 builder.Services.Configure<IceBackend.Application.Options.AuthOptions>(
     builder.Configuration.GetSection(IceBackend.Application.Options.AuthOptions.SectionName));
+builder.Services.Configure<IceBackend.Application.Options.StripeOptions>(
+    builder.Configuration.GetSection(IceBackend.Application.Options.StripeOptions.SectionName));
+builder.Services.Configure<IceBackend.Application.Options.OAuthOptions>(
+    builder.Configuration.GetSection(IceBackend.Application.Options.OAuthOptions.SectionName));
+builder.Services.AddHttpClient("oauth"); // Named HttpClient para llamadas a providers OAuth2
 builder.Services.AddScoped<IceBackend.Application.Interfaces.ISessionCache, IceBackend.Infrastructure.Services.RedisSessionCache>();
 builder.Services.AddScoped<IceBackend.Application.Interfaces.IAuthService, IceBackend.Infrastructure.Services.AuthService>();
+builder.Services.AddScoped<IceBackend.Application.Interfaces.IStripeWebhookValidator, IceBackend.Infrastructure.Services.StripeWebhookValidator>();
+builder.Services.AddScoped<IceBackend.Application.Interfaces.IStripeWebhookService, IceBackend.Infrastructure.Services.StripeWebhookService>();
+builder.Services.AddScoped<IceBackend.Application.Interfaces.IExternalAuthService, IceBackend.Infrastructure.Services.ExternalAuthService>();
 
 // Register Health Checks
 builder.Services.AddHealthChecks()
@@ -44,6 +53,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.MapControllers();
 
 // Configure Health Check Endpoint
 app.MapHealthChecks("/health", new HealthCheckOptions

@@ -17,3 +17,15 @@ Este archivo registra las modificaciones importantes, correcciones de errores y 
 ### Técnico
 - Aplicada migración inicial de PostgreSQL.
 - Verificadas 9/9 pruebas unitarias exitosas.
+
+## [2026-05-18] - Infraestructura de Webhooks y Resiliencia
+
+### Añadido
+- **Webhooks de Stripe**: Implementado endpoint `api/Webhooks/stripe` con lectura de body crudo para validación HMAC.
+- **Validación Criptográfica**: Servicio `StripeWebhookValidator` para verificación de firmas en el borde de la API.
+- **Idempotencia Híbrida**: Sistema de doble barrera (Redis + PostgreSQL) para evitar procesamiento duplicado de eventos.
+- **Procesamiento Asíncrono**: Despachador de eventos con soporte para `invoice.paid` y `customer.subscription.deleted`.
+- **Purga Automática de Sesiones**: Lógica para revocar el acceso en Redis inmediatamente tras la cancelación de una suscripción.
+
+### Mejorado
+- **Aislamiento de Infraestructura**: Los servicios de Stripe están desacoplados de la lógica de aplicación mediante DTOs y abstracciones.
