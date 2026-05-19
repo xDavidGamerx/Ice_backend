@@ -21,7 +21,8 @@ namespace IceBackend.Infrastructure.Data.Configurations
                    .HasMaxLength(24);
 
             builder.Property(e => e.CosmeticId)
-                   .HasColumnType("uuid");
+                   .HasColumnType("uuid")
+                   .IsRequired(false);
 
             builder.HasOne(e => e.Player)
                    .WithMany(p => p.EquippedCosmetics)
@@ -31,7 +32,7 @@ namespace IceBackend.Infrastructure.Data.Configurations
             builder.HasOne(e => e.Cosmetic)
                    .WithMany()
                    .HasForeignKey(e => e.CosmeticId)
-                   .OnDelete(DeleteBehavior.Cascade);
+                   .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

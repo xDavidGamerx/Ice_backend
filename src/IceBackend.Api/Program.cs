@@ -16,6 +16,20 @@ var connectionString = builder.Configuration.GetConnectionString("PostgresConnec
 builder.Services.AddDbContextPool<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
 
+// Configure Redis (IDistributedCache) — la capa Domain y Application no dependen de Redis directamente.
+var redisConnection = builder.Configuration.GetConnectionString("RedisConnection");
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = redisConnection;
+    options.InstanceName = "IceLauncher:";
+});
+
+// Register Application Services
+builder.Services.Configure<IceBackend.Application.Options.AuthOptions>(
+    builder.Configuration.GetSection(IceBackend.Application.Options.AuthOptions.SectionName));
+builder.Services.AddScoped<IceBackend.Application.Interfaces.ISessionCache, IceBackend.Infrastructure.Services.RedisSessionCache>();
+builder.Services.AddScoped<IceBackend.Application.Interfaces.IAuthService, IceBackend.Infrastructure.Services.AuthService>();
+
 // Register Health Checks
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<ApplicationDbContext>("db_check");

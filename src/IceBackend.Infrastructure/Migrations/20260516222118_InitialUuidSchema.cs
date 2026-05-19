@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -135,7 +135,7 @@ namespace IceBackend.Infrastructure.Migrations
                         column: x => x.CosmeticId,
                         principalTable: "cosmetic_assets",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_player_cosmetics_players_PlayerId",
                         column: x => x.PlayerId,

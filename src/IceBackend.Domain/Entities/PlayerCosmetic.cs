@@ -10,8 +10,8 @@ namespace IceBackend.Domain.Entities
 
         public CosmeticType Slot { get; set; }
 
-        public Guid CosmeticId { get; set; }
-        public CosmeticAsset Cosmetic { get; set; } = null!;
+        public Guid? CosmeticId { get; set; }
+        public CosmeticAsset? Cosmetic { get; set; }
 
         public DateTime EquippedAt { get; set; }
     }
