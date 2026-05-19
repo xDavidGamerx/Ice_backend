@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using System.Text.Json;
 using IceBackend.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -17,29 +15,26 @@ namespace IceBackend.Infrastructure.Data.Configurations
             builder.Property(e => e.Id)
                    .HasColumnType("uuid");
 
-            builder.HasIndex(e => e.AssetKey).IsUnique();
-
             builder.Property(e => e.CosmeticType)
                    .HasConversion<string>()
                    .HasMaxLength(24);
 
-            var comparer = new Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer<Dictionary<string, object>>(
-                (c1, c2) => JsonSerializer.Serialize(c1, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(c2, (JsonSerializerOptions?)null),
-                c => c == null ? 0 : JsonSerializer.Serialize(c, (JsonSerializerOptions?)null).GetHashCode(),
-                c => JsonSerializer.Deserialize<Dictionary<string, object>>(JsonSerializer.Serialize(c, (JsonSerializerOptions?)null), (JsonSerializerOptions?)null) ?? new Dictionary<string, object>()
-            );
+            builder.Property(e => e.DisplayName)
+                   .HasMaxLength(128)
+                   .IsRequired();
 
-            builder.Property(e => e.Metadata)
-                   .HasColumnType("jsonb")
-                   .HasConversion(
-                       v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                       v => JsonSerializer.Deserialize<Dictionary<string, object>>(v, (JsonSerializerOptions?)null) ?? new Dictionary<string, object>()
-                   )
-                   .Metadata.SetValueComparer(comparer);
+            builder.Property(e => e.AssetVersion)
+                   .IsRequired();
 
-            // Índice GIN nativo para consultas complejas sobre JSONB
-            builder.HasIndex(e => e.Metadata)
-                   .HasMethod("gin");
+            builder.Property(e => e.CreatedAt)
+                   .IsRequired();
+
+            // Las versiones binarias (CAS) se configuran en CosmeticAssetVersionConfiguration.
+            // La relación inversa se declara aquí para completitud del grafo de navegación.
+            builder.HasMany(e => e.Versions)
+                   .WithOne(v => v.CosmeticAsset)
+                   .HasForeignKey(v => v.CosmeticAssetId)
+                   .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

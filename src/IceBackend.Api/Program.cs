@@ -32,12 +32,15 @@ builder.Services.Configure<IceBackend.Application.Options.StripeOptions>(
     builder.Configuration.GetSection(IceBackend.Application.Options.StripeOptions.SectionName));
 builder.Services.Configure<IceBackend.Application.Options.OAuthOptions>(
     builder.Configuration.GetSection(IceBackend.Application.Options.OAuthOptions.SectionName));
+builder.Services.Configure<IceBackend.Application.Options.CdnOptions>(
+    builder.Configuration.GetSection("Cdn"));
 builder.Services.AddHttpClient("oauth"); // Named HttpClient para llamadas a providers OAuth2
 builder.Services.AddScoped<IceBackend.Application.Interfaces.ISessionCache, IceBackend.Infrastructure.Services.RedisSessionCache>();
 builder.Services.AddScoped<IceBackend.Application.Interfaces.IAuthService, IceBackend.Infrastructure.Services.AuthService>();
 builder.Services.AddScoped<IceBackend.Application.Interfaces.IStripeWebhookValidator, IceBackend.Infrastructure.Services.StripeWebhookValidator>();
 builder.Services.AddScoped<IceBackend.Application.Interfaces.IStripeWebhookService, IceBackend.Infrastructure.Services.StripeWebhookService>();
 builder.Services.AddScoped<IceBackend.Application.Interfaces.IExternalAuthService, IceBackend.Infrastructure.Services.ExternalAuthService>();
+builder.Services.AddSingleton<IceBackend.Application.Interfaces.ICdnUrlSigner, IceBackend.Infrastructure.Services.CdnUrlSigner>();
 
 // Register Health Checks
 builder.Services.AddHealthChecks()

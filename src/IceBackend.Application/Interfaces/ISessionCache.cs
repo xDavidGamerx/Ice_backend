@@ -23,5 +23,10 @@ namespace IceBackend.Application.Interfaces
         /// Invalida la sesión de un jugador (logout / revocación).
         /// </summary>
         Task RemoveSessionAsync(string playerId);
+
+        /// <summary>
+        /// Obtiene el PlayerId asociado a un SessionToken específico.
+        /// </summary>
+        Task<string?> GetPlayerIdBySessionAsync(string sessionToken);
     }
 }
