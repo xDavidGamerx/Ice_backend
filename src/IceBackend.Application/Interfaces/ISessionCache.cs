@@ -1,0 +1,49 @@
+using System.Threading.Tasks;
+
+namespace IceBackend.Application.Interfaces
+{
+    /// <summary>
+    /// Abstracción de caché de sesiones de jugador.
+    /// La capa Application solo conoce esta interfaz; la implementación concreta (Redis)
+    /// vive exclusivamente en Infrastructure, manteniendo el Domain y Application libres.
+    /// </summary>
+    public interface ISessionCache
+    {
+        /// <summary>
+        /// Persiste un token de sesión asociado al UUID del jugador con un TTL dado.
+        /// </summary>
+        Task SetSessionAsync(string playerId, string sessionToken, System.TimeSpan ttl);
+
+        /// <summary>
+        /// Recupera el token de sesión activo para un jugador, o null si expiró/no existe.
+        /// </summary>
+        Task<string?> GetSessionAsync(string playerId);
+
+        /// <summary>
+        /// Invalida la sesión de un jugador (logout / revocación).
+        /// </summary>
+        Task RemoveSessionAsync(string playerId);
+
+        /// <summary>
+        /// Obtiene el PlayerId asociado a un SessionToken específico.
+        /// </summary>
+        Task<string?> GetPlayerIdBySessionAsync(string sessionToken);
+
+        /// <summary>
+        /// Verifica si un jugador posee un cosmético específico. 
+        /// Debe implementar patrón Cache-Aside para consultar DB si la clave no existe en Redis.
+        /// </summary>
+        Task<bool> IsCosmeticOwnedAsync(Guid playerId, Guid cosmeticId);
+
+        /// <summary>
+        /// Invalida el conjunto de cosméticos cacheados de un jugador (Stripe Sync).
+        /// </summary>
+        Task InvalidatePlayerCosmeticsAsync(Guid playerId);
+
+        /// <summary>
+        /// Resuelve un hash SHA256 a un UUID de CosmeticAsset.
+        /// Debe implementar patrón Cache-Aside.
+        /// </summary>
+        Task<Guid?> GetCosmeticIdByHashAsync(string hash);
+    }
+}

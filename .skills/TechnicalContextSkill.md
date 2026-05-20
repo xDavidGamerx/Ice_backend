@@ -38,8 +38,9 @@ No contiene contexto de negocio, visión del producto ni lógica funcional. Para
 - **Runtime**: .NET 8.0 (`Confirmado`)
 - **Base de datos**: PostgreSQL (`Confirmado`)
 - **Arquitectura**: Clean Architecture (capas: Api, Application, Domain, Infrastructure) (`Confirmado`)
-- **Sistema de identidad**: Identity (Premium/ICE UUIDs) (`Confirmado` como objetivo técnico; `No documentado como contrato`)
-- **Autenticación OAuth**: Microsoft, Google (`Pendiente de confirmación humana` para alcance exacto; `No documentado como contrato`)
+- **Caché/Sesiones**: Redis (StackExchange.Redis para Sets y SISMEMBER) (`Confirmado`)
+- **Sistema de identidad**: Identity (Premium/ICE UUIDs) (`Confirmado` como objetivo técnico)
+- **Autenticación OAuth**: Microsoft, Google (`Confirmado` - Flujo Authorization Code con PKCE)
 - **Sistema de cosméticos**: Sombreros, Alas, Capas, etc. (`Pendiente de confirmación humana` para lista exacta)
 - **Gestión de assets**: Verificación SHA256 (`Pendiente de confirmación humana` para comportamiento exacto)
 
@@ -68,24 +69,23 @@ docs/
 
 ---
 
-## Estado actual de implementación
+## Estado de los componentes técnicos
 
-### Implementado (`Confirmado`)
-- [x] Estructura inicial de Clean Architecture.
-- [x] Esquema de base de datos definido para Identity y Cosméticos.
-- [x] Configuración de EF Core y PostgreSQL.
-- [x] Health Check implementado (`No documentado como contrato`: la ruta exacta no debe asumirse por clientes externos sin confirmación).
-
-### Pendiente (`Pendiente de confirmación humana` para detalles)
-- [ ] Implementación de proveedores de autenticación (Auth Providers).
-- [ ] Implementación de API de entrega de assets (Asset Delivery API).
-- [ ] Ejecución de migraciones de base de datos.
+*   **Arquitectura Base**: Clean Architecture estructurada con API, Application, Domain e Infrastructure (`Confirmado`).
+*   **Base de Datos**: PostgreSQL para almacenamiento persistente con esquemas e índices migrados en desarrollo (`Confirmado`).
+*   **Caché y Sesiones**: Redis operativo para la validación O(1) de inventario mediante Sets (`SISMEMBER`) y almacenamiento temporal de sesiones (`Confirmado`).
+*   **Autenticación**:
+    *   Sesiones unificadas integradas con `[Authorize]` a través de `SessionTokenAuthenticationHandler` (`Confirmado`).
+    *   Flujo OAuth2 PKCE para Microsoft/Google implementado para sincronización de identidades externas (`Confirmado`).
+*   **Entrega de Activos**: Asset Delivery API con Just-in-Time delivery, tokens efímeros firmados con HMAC-SHA256 y redirección temporal 307 al CDN (`Confirmado`).
+*   **Auditoría**: Sistema de auditoría en la tabla `unresolved_payment_events` para webhooks de pago huérfanos en Stripe (`Confirmado`).
+*   **Rangos e Inventario**: Lógica técnica para equipar cosméticos y modelo técnico de beneficios de rangos (`Pendiente de definición técnica y confirmación humana`).
 
 ---
 
 ## Límites de interpretación
 
-- Esta skill documenta el estado técnico actual y las decisiones de arquitectura ya tomadas. No define nuevas decisiones técnicas.
+- Este documento documenta el estado técnico actual y las decisiones de arquitectura ya tomadas. No define nuevas decisiones técnicas.
 - Las funcionalidades listadas como pendientes son las que están documentadas en el proyecto. No se deben asumir otras funcionalidades no listadas.
 - Para entender el contexto de negocio que impulsa estas decisiones técnicas, consulta `ContextSkill.md`.
 
@@ -100,6 +100,4 @@ docs/
 
 ## Información pendiente o ambigua
 
-- No se ha documentado si la implementación de OAuth (Microsoft, Google) sigue algún flujo específico no estándar.
-- No se ha detallado el modelo de datos completo para la gestión de rangos y sus beneficios a nivel técnico.
-- El sistema de Asset Delivery API no tiene especificación pública más allá de su nombre.
+- No se ha detallado el modelo de datos final ni las implicaciones funcionales para la gestión técnica de Rangos y sus beneficios.

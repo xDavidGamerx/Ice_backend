@@ -147,3 +147,19 @@ Antes de finalizar cualquier intervención, verifica que:
 5. La documentación modificada o creada sea clara, profesional y entendible para un humano y útil para un agente.
 6. Las ambigüedades y vacíos estén explícitamente señalados si los hay.
 7. Los cambios en código sigan las guías de desarrollo del proyecto.
+
+---
+
+## Sugerencia de Commit y Control de Versiones (Opcional)
+
+Al finalizar con éxito cualquier tarea (corrección de bug, nueva funcionalidad, refactorización o cambio de documentación), el agente debe ofrecer al usuario de manera sugerida los comandos de Git necesarios para preparar y subir los cambios a su rama. Esta acción es siempre una sugerencia opcional y queda a la entera decisión del usuario si desea ejecutarla o no.
+
+Se debe proponer un mensaje de commit estructurado bajo la convención de *Conventional Commits*:
+- `feat(assets): ...` para nuevas funcionalidades del sistema.
+- `fix(auth): ...` para corrección de bugs.
+- `docs(readme): ...` para actualizaciones de documentación.
+- `refactor(webhooks): ...` para cambios que no modifican comportamiento público.
+- `test(delivery): ...` para añadir o modificar pruebas unitarias.
+
+Ejemplo:
+*   `git commit -m "feat(assets): implementar autenticación declarativa y tokens efímeros para entrega de activos"`
