@@ -78,26 +78,13 @@ namespace IceBackend.Application.DTOs
         public string Hash { get; init; } = null!;
 
         /// <summary>Tamaño del binario en bytes para mostrar progreso de descarga.</summary>
-        public long SizeBytes { get; init; }
-
-        /// <summary>
-        /// URL prefirmada o ruta en CDN para descargar el binario.
-        /// NUNCA apunta a esta API. Siempre es una URL de CDN (S3/Cloudflare R2).
-        /// Se construye como: {CdnBaseUrl}/assets/{Hash}
-        /// </summary>
-        public string Url { get; init; } = null!;
-
-        /// <summary>
-        /// Momento exacto en formato ISO 8601 UTC en el que la URL prefirmada expirará.
-        /// El Launcher debe usar esta fecha para invalidar su caché de enlaces y solicitar uno nuevo.
-        /// </summary>
-        public DateTime ExpiresAt { get; init; }
+        public long SizeBytes { get; set; }
 
         /// <summary>
         /// Metadatos de renderizado específicos del motor de destino.
         /// El Launcher los consume intactos; el backend no los interpreta.
         /// </summary>
-        public Dictionary<string, object> Metadata { get; init; } = new();
+        public Dictionary<string, object> Metadata { get; set; } = new();
     }
 
     /// <summary>

@@ -18,6 +18,7 @@ namespace IceBackend.Infrastructure.Data
         public DbSet<PlayerCosmetic> PlayerCosmetics { get; set; } = null!;
         public DbSet<PlayerCosmeticOwnership> PlayerCosmeticOwnerships { get; set; } = null!;
         public DbSet<PaymentEvent> PaymentEvents { get; set; } = null!;
+        public DbSet<UnresolvedPaymentEvent> UnresolvedPaymentEvents { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

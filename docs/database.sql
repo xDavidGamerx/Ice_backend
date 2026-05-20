@@ -81,6 +81,16 @@ CREATE TABLE IF NOT EXISTS payment_events (
     processed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS unresolved_payment_events (
+    id UUID PRIMARY KEY,
+    provider VARCHAR(24) NOT NULL CHECK (provider IN ('STRIPE', 'PAYPAL')),
+    provider_event_id TEXT NOT NULL UNIQUE,
+    payment_intent_id TEXT NOT NULL,
+    status VARCHAR(32) NOT NULL,
+    raw_event JSONB NOT NULL,
+    processed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 -- ==============================================================================
 -- 4. INDICES CRÍTICOS (PERFORMANCE)
 -- ==============================================================================
@@ -90,3 +100,4 @@ CREATE INDEX IF NOT EXISTS idx_external_auth_lookup ON player_external_auth(exte
 CREATE INDEX IF NOT EXISTS idx_bootstrap_player ON bootstrap_tokens(player_id);
 CREATE INDEX IF NOT EXISTS idx_ownership_player_id ON player_cosmetic_ownership(player_id);
 CREATE INDEX IF NOT EXISTS idx_payment_events_intent ON payment_events(payment_intent_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_unresolved_payment_events_provider_event_id ON unresolved_payment_events(provider_event_id);

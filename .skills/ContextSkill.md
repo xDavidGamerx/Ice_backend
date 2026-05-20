@@ -108,40 +108,26 @@ Desde el launcher, el usuario no solo ve una interfaz para abrir el juego, sino 
 
 Además, el usuario puede descubrir productos dentro del ecosistema, comprarlos y ver reflejadas esas compras de forma consistente en su cuenta. Esto incluye cosméticos visibles, contenido desbloqueado y rangos con beneficios aplicables a su experiencia.
 
-La experiencia debe sentirse como un solo producto. El usuario tiene una identidad persistente. Sus compras están ligadas a esa identidad. Los productos adquiridos forman parte de su experiencia. Todo está conectado.
+La experiencia debe sentirse como un solo producto. El usuario tiene una identidad persistente. Sus compras están ligadas a esa identidad.
 
 ---
 
-## Lógica de negocio identificada
+## Lógica y Reglas de Negocio
 
-Del contexto se desprenden las siguientes reglas y principios de negocio:
+Del contexto se desprenden las siguientes reglas estrictas de negocio:
 
-1. **La cuenta ICE es la identidad raíz**. Todo usuario del ecosistema tiene una cuenta ICE. La cuenta Microsoft es un complemento opcional.
-
-2. **La diferenciación entre tipos de cuenta es fundamental**. El sistema no debe tratar a todos los usuarios de la misma forma. Debe entender y manejar las diferencias entre un usuario solo-ICE y un usuario con cuenta Microsoft vinculada.
-
-3. **Los cosméticos y los rangos son categorías de producto distintas**. No deben mezclarse. Tienen propósitos, comportamientos y lógicas diferentes. Los cosméticos son visuales. Los rangos otorgan beneficios.
-
-4. **Los productos adquiridos están ligados a la identidad del usuario**. Una compra no es una transacción aislada. Pasa a formar parte de la experiencia del usuario y debe reflejarse de forma consistente en todos los canales.
-
-5. **Varios canales comparten una misma fuente de verdad**. El launcher, la tienda web y cualquier canal futuro deben leer y escribir sobre la misma base de información central.
-
-6. **El sistema debe soportar expansión futura**. No está pensado para un conjunto fijo de funcionalidades, sino como una base preparada para crecer.
-
-7. **La monetización es parte central del producto**. El sistema no solo resuelve autenticación o acceso, sino que habilita un modelo de negocio basado en venta de contenido virtual.
+1.  **Identidad Raíz**: Todo usuario posee una cuenta ICE como identidad base persistente en el sistema. La cuenta de Microsoft es un complemento opcional.
+2.  **Diferenciación de Cuentas**: La plataforma debe identificar y dar soporte tanto a usuarios solo-ICE (no premium) como a usuarios con cuenta Microsoft vinculada sin tratarlos de forma idéntica.
+3.  **Segregación de Catálogo**: Los cosméticos (personalización puramente visual) y los rangos (otorgamiento de beneficios funcionales) son categorías de producto distintas con lógicas de negocio separadas que no deben mezclarse.
+4.  **Vigencia e Inventario**: Los productos adquiridos se asocian permanentemente a la cuenta ICE del usuario y deben propagarse de forma consistente e inmediata.
 
 ---
 
-## Principios del producto
+## Principios del Producto
 
-- **Identidad primero**: El usuario existe en el sistema a través de su cuenta ICE. Todo lo demás se construye sobre esa base.
-- **Diferenciación consciente**: El sistema reconoce y respeta las diferencias entre tipos de usuario sin forzar uniformidad.
-- **Experiencia unificada**: Aunque haya múltiples canales, la experiencia debe sentirse como un solo producto.
-- **Persistencia**: La identidad, las compras, los productos y los beneficios del usuario son persistentes y están ligados a su cuenta.
-- **Coherencia**: Lo que un usuario ve en el launcher debe ser consistente con lo que ve en la tienda web y en cualquier otro canal.
-- **Preparación para el crecimiento**: El sistema debe estar diseñado para ampliarse sin romper lo existente.
-- **Claridad conceptual**: Cosméticos y rangos no se mezclan. Cada categoría tiene su propia lógica y propósito.
-- **El launcher es la cara principal**: Es el canal principal del ecosistema, pero no el único. La tienda web y un futuro panel de gestión también forman parte del todo.
+-   **Experiencia Unificada (Omnicanalidad)**: La experiencia debe ser coherente y homogénea en todos los canales (Launcher, Tienda Web y Panel de Gestión). La fuente de verdad técnica es única y compartida.
+-   **El Launcher como Eje Central**: Es la cara principal del ecosistema, operando como una extensión visual interactiva del perfil y pertenencias del usuario.
+-   **Diseño Extensible**: La plataforma se concibe como un sistema preparado para la expansión comercial y funcional continua sin alterar la infraestructura existente.
 
 ---
 

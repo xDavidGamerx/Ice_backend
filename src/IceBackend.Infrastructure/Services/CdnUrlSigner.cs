@@ -18,7 +18,7 @@ namespace IceBackend.Infrastructure.Services
 
         public (string Url, DateTime ExpiresAt) GeneratePresignedUrl(string assetHash)
         {
-            var expiresAt = DateTime.UtcNow.AddMinutes(_options.UrlExpirationMinutes);
+            var expiresAt = DateTime.UtcNow.AddMinutes(1);
             var expiryTimestamp = new DateTimeOffset(expiresAt).ToUnixTimeSeconds();
 
             // Simulación de URL prefirmada (ej. HMAC SHA256)

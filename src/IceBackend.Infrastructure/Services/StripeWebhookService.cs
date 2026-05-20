@@ -18,6 +18,7 @@ namespace IceBackend.Infrastructure.Services
     {
         // Tipos de evento soportados
         private const string InvoicePaid = "invoice.paid";
+        private const string InvoicePaymentFailed = "invoice.payment_failed";
         private const string SubscriptionDeleted = "customer.subscription.deleted";
 
         // TTL de idempotencia en Redis = tiempo máximo de reintento de Stripe (72h) + margen
@@ -60,6 +61,8 @@ namespace IceBackend.Infrastructure.Services
             {
                 // Verificar en DB por si Redis fue vaciado (ej: restart de Redis).
                 var alreadyPersisted = await _dbContext.PaymentEvents
+                    .AnyAsync(e => e.ProviderEventId == webhookEvent.EventId)
+                    || await _dbContext.UnresolvedPaymentEvents
                     .AnyAsync(e => e.ProviderEventId == webhookEvent.EventId);
 
                 if (alreadyPersisted)
@@ -96,6 +99,9 @@ namespace IceBackend.Infrastructure.Services
                 case InvoicePaid:
                     await HandleInvoicePaidAsync(webhookEvent);
                     break;
+                case InvoicePaymentFailed:
+                    await HandleInvoicePaymentFailedAsync(webhookEvent);
+                    break;
                 case SubscriptionDeleted:
                     await HandleSubscriptionDeletedAsync(webhookEvent);
                     break;
@@ -111,7 +117,6 @@ namespace IceBackend.Infrastructure.Services
 
         private async Task HandleInvoicePaidAsync(WebhookEventDto webhookEvent)
         {
-            // Extraer el customerId de Stripe para encontrar al jugador en nuestra DB.
             var customerId = ExtractStripeCustomerId(webhookEvent.DataObjectJson);
             var player = await FindPlayerByStripeCustomerIdAsync(customerId);
 
@@ -122,11 +127,32 @@ namespace IceBackend.Infrastructure.Services
                 return;
             }
 
-            // Aquí iría la lógica de provisión: activar rango, desbloquear cosméticos, etc.
-            // Por ahora, registramos el evento y mantenemos la sesión activa.
             await PersistPaymentEventAsync(webhookEvent, player.Id, status: "paid");
 
-            _logger.LogInformation("Invoice paid processed for PlayerId: {PlayerId}", player.Id);
+            // Purga de caché para reflejar nuevos cosméticos adquiridos
+            await _sessionCache.InvalidatePlayerCosmeticsAsync(player.Id);
+            
+            _logger.LogInformation("Invoice paid processed and cache invalidated for PlayerId: {PlayerId}", player.Id);
+        }
+
+        private async Task HandleInvoicePaymentFailedAsync(WebhookEventDto webhookEvent)
+        {
+            var customerId = ExtractStripeCustomerId(webhookEvent.DataObjectJson);
+            var player = await FindPlayerByStripeCustomerIdAsync(customerId);
+
+            if (player is null)
+            {
+                _logger.LogWarning("Player not found for Stripe customerId: {CustomerId}", customerId);
+                await PersistPaymentEventAsync(webhookEvent, playerId: null, status: "PENDING_RESOLUTION");
+                return;
+            }
+
+            await PersistPaymentEventAsync(webhookEvent, player.Id, status: "payment_failed");
+
+            // Invalidar caché ante fallo de pago para revocar accesos temporales
+            await _sessionCache.InvalidatePlayerCosmeticsAsync(player.Id);
+            
+            _logger.LogWarning("Payment failed for PlayerId: {PlayerId}. Inventory cache invalidated.", player.Id);
         }
 
         private async Task HandleSubscriptionDeletedAsync(WebhookEventDto webhookEvent)
@@ -141,15 +167,13 @@ namespace IceBackend.Infrastructure.Services
                 return;
             }
 
-            // Registrar el evento de cancelación.
             await PersistPaymentEventAsync(webhookEvent, player.Id, status: "subscription_cancelled");
 
-            // ── PURGA DE SESIÓN: Directiva 4 ─────────────────────────────────────
-            // La suscripción fue cancelada → el usuario pierde sus privilegios.
-            // Forzamos la expiración de la sesión en Redis para que el cliente
-            // re-autentique y obtenga el estado actualizado sin privilegios.
+            // Purga completa de sesión e inventario
             await _sessionCache.RemoveSessionAsync(player.Id.ToString());
-            _logger.LogInformation("Session purged for PlayerId: {PlayerId} due to subscription cancellation.", player.Id);
+            await _sessionCache.InvalidatePlayerCosmeticsAsync(player.Id);
+            
+            _logger.LogInformation("Session and inventory purged for PlayerId: {PlayerId} due to subscription cancellation.", player.Id);
         }
 
         // ── HELPERS ───────────────────────────────────────────────────────────────
@@ -160,26 +184,40 @@ namespace IceBackend.Infrastructure.Services
         /// </summary>
         private async Task PersistPaymentEventAsync(WebhookEventDto webhookEvent, Guid? playerId, string status)
         {
-            // Para eventos sin player conocido, usamos un PlayerId sentinel (Guid.Empty es válido como NULL-substitute).
-            // Idealmente la columna sería nullable; por ahora usamos un Guid vacío si no hay player.
-            var resolvedPlayerId = playerId ?? Guid.Empty;
-
-            // Buscar si existe un player sentinel (el sistema puede tener un registro dummy).
-            // En producción, PlayerId nullable sería la solución correcta.
-            var paymentEvent = new PaymentEvent
+            if (playerId == null)
             {
-                Id = Guid.NewGuid(),
-                Provider = PaymentProvider.STRIPE,
-                ProviderEventId = webhookEvent.EventId,
-                PaymentIntentId = ExtractPaymentIntentId(webhookEvent.DataObjectJson),
-                PlayerId = resolvedPlayerId,
-                Status = status,
-                RawEvent = webhookEvent.DataObjectJson,
-                ProcessedAt = DateTime.UtcNow
-            };
+                var unresolvedEvent = new UnresolvedPaymentEvent
+                {
+                    Id = Guid.NewGuid(),
+                    Provider = PaymentProvider.STRIPE,
+                    ProviderEventId = webhookEvent.EventId,
+                    PaymentIntentId = ExtractPaymentIntentId(webhookEvent.DataObjectJson),
+                    Status = status == "unhandled" ? "unhandled" : "PENDING_RESOLUTION",
+                    RawEvent = webhookEvent.DataObjectJson,
+                    ProcessedAt = DateTime.UtcNow
+                };
 
-            _dbContext.PaymentEvents.Add(paymentEvent);
-            await _dbContext.SaveChangesAsync();
+                _dbContext.UnresolvedPaymentEvents.Add(unresolvedEvent);
+                await _dbContext.SaveChangesAsync();
+                _logger.LogInformation("Unresolved payment event persisted. EventId: {EventId}, Status: {Status}", webhookEvent.EventId, unresolvedEvent.Status);
+            }
+            else
+            {
+                var paymentEvent = new PaymentEvent
+                {
+                    Id = Guid.NewGuid(),
+                    Provider = PaymentProvider.STRIPE,
+                    ProviderEventId = webhookEvent.EventId,
+                    PaymentIntentId = ExtractPaymentIntentId(webhookEvent.DataObjectJson),
+                    PlayerId = playerId.Value,
+                    Status = status,
+                    RawEvent = webhookEvent.DataObjectJson,
+                    ProcessedAt = DateTime.UtcNow
+                };
+
+                _dbContext.PaymentEvents.Add(paymentEvent);
+                await _dbContext.SaveChangesAsync();
+            }
         }
 
         private async Task<Player?> FindPlayerByStripeCustomerIdAsync(string? customerId)

@@ -12,6 +12,15 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = "SessionToken";
+    options.DefaultChallengeScheme = "SessionToken";
+})
+.AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, IceBackend.Api.Authentication.SessionTokenAuthenticationHandler>("SessionToken", null);
+
+builder.Services.AddAuthorization();
+
 // Configure Entity Framework Core with PostgreSQL
 var connectionString = builder.Configuration.GetConnectionString("PostgresConnection");
 builder.Services.AddDbContextPool<ApplicationDbContext>(options =>
@@ -19,6 +28,11 @@ builder.Services.AddDbContextPool<ApplicationDbContext>(options =>
 
 // Configure Redis (IDistributedCache) — la capa Domain y Application no dependen de Redis directamente.
 var redisConnection = builder.Configuration.GetConnectionString("RedisConnection");
+
+// Registro manual de ConnectionMultiplexer para comandos avanzados (Sets, SISMEMBER)
+var redis = StackExchange.Redis.ConnectionMultiplexer.Connect(redisConnection!);
+builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(redis);
+
 builder.Services.AddStackExchangeRedisCache(options =>
 {
     options.Configuration = redisConnection;
@@ -41,6 +55,7 @@ builder.Services.AddScoped<IceBackend.Application.Interfaces.IStripeWebhookValid
 builder.Services.AddScoped<IceBackend.Application.Interfaces.IStripeWebhookService, IceBackend.Infrastructure.Services.StripeWebhookService>();
 builder.Services.AddScoped<IceBackend.Application.Interfaces.IExternalAuthService, IceBackend.Infrastructure.Services.ExternalAuthService>();
 builder.Services.AddSingleton<IceBackend.Application.Interfaces.ICdnUrlSigner, IceBackend.Infrastructure.Services.CdnUrlSigner>();
+builder.Services.AddScoped<IceBackend.Application.Interfaces.IAssetTokenService, IceBackend.Infrastructure.Services.AssetTokenService>();
 
 // Register Health Checks
 builder.Services.AddHealthChecks()
@@ -56,6 +71,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapControllers();
 
 // Configure Health Check Endpoint

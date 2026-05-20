@@ -28,5 +28,22 @@ namespace IceBackend.Application.Interfaces
         /// Obtiene el PlayerId asociado a un SessionToken específico.
         /// </summary>
         Task<string?> GetPlayerIdBySessionAsync(string sessionToken);
+
+        /// <summary>
+        /// Verifica si un jugador posee un cosmético específico. 
+        /// Debe implementar patrón Cache-Aside para consultar DB si la clave no existe en Redis.
+        /// </summary>
+        Task<bool> IsCosmeticOwnedAsync(Guid playerId, Guid cosmeticId);
+
+        /// <summary>
+        /// Invalida el conjunto de cosméticos cacheados de un jugador (Stripe Sync).
+        /// </summary>
+        Task InvalidatePlayerCosmeticsAsync(Guid playerId);
+
+        /// <summary>
+        /// Resuelve un hash SHA256 a un UUID de CosmeticAsset.
+        /// Debe implementar patrón Cache-Aside.
+        /// </summary>
+        Task<Guid?> GetCosmeticIdByHashAsync(string hash);
     }
 }
