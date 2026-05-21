@@ -22,7 +22,7 @@ namespace IceBackend.Infrastructure.Services
         public AuthService(
             ApplicationDbContext dbContext,
             ISessionCache sessionCache,
-            IOptions<AuthOptions> authOptions)
+            IOptionsSnapshot<AuthOptions> authOptions)
         {
             _dbContext = dbContext;
             _sessionCache = sessionCache;
@@ -40,27 +40,12 @@ namespace IceBackend.Infrastructure.Services
             }
 
             // Regla 1 y 2: El UUID se genera en el servidor de forma aislada. No se acepta del cliente.
-            var newPlayer = new Player
-            {
-                Id = Guid.NewGuid(),
-                Username = username,
-                UuidType = UuidType.ICE,
-                PasswordHash = HashPassword(password),
-                CreatedAt = DateTime.UtcNow
-            };
-
-            // Regla 4: Inicializar la entrada en player_cosmetics con slots vacíos.
-            var cosmeticSlots = Enum.GetValues(typeof(CosmeticType)).Cast<CosmeticType>();
-            foreach (var slot in cosmeticSlots)
-            {
-                newPlayer.EquippedCosmetics.Add(new PlayerCosmetic
-                {
-                    PlayerId = newPlayer.Id,
-                    Slot = slot,
-                    CosmeticId = null, // Empty slot
-                    EquippedAt = DateTime.UtcNow
-                });
-            }
+            var newPlayer = new Player(
+                Guid.NewGuid(),
+                username,
+                UuidType.ICE,
+                HashPassword(password)
+            );
 
             _dbContext.Players.Add(newPlayer);
             await _dbContext.SaveChangesAsync();

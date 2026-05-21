@@ -1,9 +1,21 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace IceBackend.Application.Options
 {
     public class CdnOptions
     {
-        public string BaseUrl { get; set; } = string.Empty;
-        public int UrlExpirationMinutes { get; set; } = 15;
-        public string SigningSecret { get; set; } = string.Empty;
+        public const string SectionName = "Cdn";
+
+        [Required(ErrorMessage = "CDN BaseUrl is missing")]
+        [Url]
+        public string BaseUrl { get; init; } = string.Empty;
+
+        [Required]
+        [Range(1, 1440)]
+        public int UrlExpirationMinutes { get; init; }
+
+        [Required(ErrorMessage = "CDN SigningSecret is missing")]
+        [MinLength(10)]
+        public string SigningSecret { get; init; } = string.Empty;
     }
 }

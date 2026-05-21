@@ -5,16 +5,37 @@ namespace IceBackend.Domain.Entities
 {
     public class UnresolvedPaymentEvent
     {
-        public Guid Id { get; set; }
-        public PaymentProvider Provider { get; set; }
-        public string ProviderEventId { get; set; } = null!;
-        public string PaymentIntentId { get; set; } = null!;
+        public Guid Id { get; private set; }
+        public PaymentProvider Provider { get; private set; }
+        public string ProviderEventId { get; private set; } = null!;
+        public string PaymentIntentId { get; private set; } = null!;
 
-        public string Status { get; set; } = null!;
+        public string Status { get; private set; } = null!;
 
-        // JSONB raw payload from Stripe webhook
-        public string RawEvent { get; set; } = null!;
+        public string RawEvent { get; private set; } = null!;
 
-        public DateTime ProcessedAt { get; set; }
+        public DateTime ProcessedAt { get; private set; }
+
+        private UnresolvedPaymentEvent() { }
+
+        public UnresolvedPaymentEvent(Guid id, PaymentProvider provider, string providerEventId, string paymentIntentId, string status, string rawEvent)
+        {
+            if (id == Guid.Empty) throw new ArgumentException("ID cannot be empty.", nameof(id));
+            if (string.IsNullOrWhiteSpace(providerEventId)) throw new ArgumentException("Provider Event ID cannot be empty.", nameof(providerEventId));
+            if (string.IsNullOrWhiteSpace(paymentIntentId)) throw new ArgumentException("Payment Intent ID cannot be empty.", nameof(paymentIntentId));
+
+            Id = id;
+            Provider = provider;
+            ProviderEventId = providerEventId;
+            PaymentIntentId = paymentIntentId;
+            Status = status;
+            RawEvent = rawEvent;
+            ProcessedAt = DateTime.UtcNow;
+        }
+
+        public void UpdateStatus(string newStatus)
+        {
+            Status = newStatus;
+        }
     }
 }

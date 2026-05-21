@@ -17,7 +17,7 @@ namespace IceBackend.Infrastructure.Services
         private readonly ILogger<StripeWebhookValidator> _logger;
 
         public StripeWebhookValidator(
-            IOptions<StripeOptions> stripeOptions,
+            IOptionsSnapshot<StripeOptions> stripeOptions,
             ILogger<StripeWebhookValidator> logger)
         {
             _webhookSecret = stripeOptions.Value.WebhookSecret;

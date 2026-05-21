@@ -37,8 +37,8 @@ namespace IceBackend.Infrastructure.Services
         public ExternalAuthService(
             ApplicationDbContext dbContext,
             ISessionCache sessionCache,
-            IOptions<OAuthOptions> oauthOptions,
-            IOptions<AuthOptions> authOptions,
+            IOptionsSnapshot<OAuthOptions> oauthOptions,
+            IOptionsSnapshot<AuthOptions> authOptions,
             IHttpClientFactory httpClientFactory,
             ILogger<ExternalAuthService> logger)
         {
@@ -201,37 +201,21 @@ namespace IceBackend.Infrastructure.Services
             if (await _dbContext.Players.AnyAsync(p => p.Username == username))
                 username = $"{username}_{Guid.NewGuid().ToString("N")[..6]}";
 
-            var newPlayer = new Player
-            {
-                Id = Guid.NewGuid(),
-                Username = username,
-                UuidType = UuidType.PREMIUM, // Cuentas externas usan el tipo PREMIUM (compatible con Mojang ecosystem).
-                PasswordHash = null,          // Sin contraseña local: se autentica solo por OAuth.
-                CreatedAt = DateTime.UtcNow
-            };
-
-            // Inicializar slots de cosméticos vacíos.
-            foreach (var slot in Enum.GetValues<CosmeticType>())
-            {
-                newPlayer.EquippedCosmetics.Add(new PlayerCosmetic
-                {
-                    PlayerId = newPlayer.Id,
-                    Slot = slot,
-                    CosmeticId = null,
-                    EquippedAt = DateTime.UtcNow
-                });
-            }
+            var newPlayer = new Player(
+                Guid.NewGuid(),
+                username,
+                UuidType.PREMIUM,
+                null
+            );
 
             // Registrar la vinculación con el proveedor externo.
-            newPlayer.ExternalAuths.Add(new ExternalAuth
-            {
-                Id = Guid.NewGuid(),
-                PlayerId = newPlayer.Id,
-                Provider = authProvider,
-                ExternalId = profile.ExternalId,
-                Email = profile.Email,
-                LinkedAt = DateTime.UtcNow
-            });
+            newPlayer.AddExternalAuth(new ExternalAuth(
+                Guid.NewGuid(),
+                newPlayer.Id,
+                authProvider,
+                profile.ExternalId,
+                profile.Email
+            ));
 
             _dbContext.Players.Add(newPlayer);
             await _dbContext.SaveChangesAsync();

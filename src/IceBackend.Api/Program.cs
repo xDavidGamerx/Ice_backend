@@ -39,23 +39,44 @@ builder.Services.AddStackExchangeRedisCache(options =>
     options.InstanceName = "IceLauncher:";
 });
 
-// Register Application Services
-builder.Services.Configure<IceBackend.Application.Options.AuthOptions>(
-    builder.Configuration.GetSection(IceBackend.Application.Options.AuthOptions.SectionName));
-builder.Services.Configure<IceBackend.Application.Options.StripeOptions>(
-    builder.Configuration.GetSection(IceBackend.Application.Options.StripeOptions.SectionName));
-builder.Services.Configure<IceBackend.Application.Options.OAuthOptions>(
-    builder.Configuration.GetSection(IceBackend.Application.Options.OAuthOptions.SectionName));
-builder.Services.Configure<IceBackend.Application.Options.CdnOptions>(
-    builder.Configuration.GetSection("Cdn"));
+// Register Application Services with Fail-Fast Validation
+builder.Services.AddOptions<IceBackend.Application.Options.AuthOptions>()
+    .BindConfiguration(IceBackend.Application.Options.AuthOptions.SectionName)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+builder.Services.AddOptions<IceBackend.Application.Options.StripeOptions>()
+    .BindConfiguration(IceBackend.Application.Options.StripeOptions.SectionName)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+builder.Services.AddOptions<IceBackend.Application.Options.OAuthOptions>()
+    .BindConfiguration(IceBackend.Application.Options.OAuthOptions.SectionName)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+builder.Services.AddOptions<IceBackend.Application.Options.CdnOptions>()
+    .BindConfiguration(IceBackend.Application.Options.CdnOptions.SectionName)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 builder.Services.AddHttpClient("oauth"); // Named HttpClient para llamadas a providers OAuth2
 builder.Services.AddScoped<IceBackend.Application.Interfaces.ISessionCache, IceBackend.Infrastructure.Services.RedisSessionCache>();
 builder.Services.AddScoped<IceBackend.Application.Interfaces.IAuthService, IceBackend.Infrastructure.Services.AuthService>();
 builder.Services.AddScoped<IceBackend.Application.Interfaces.IStripeWebhookValidator, IceBackend.Infrastructure.Services.StripeWebhookValidator>();
 builder.Services.AddScoped<IceBackend.Application.Interfaces.IStripeWebhookService, IceBackend.Infrastructure.Services.StripeWebhookService>();
 builder.Services.AddScoped<IceBackend.Application.Interfaces.IExternalAuthService, IceBackend.Infrastructure.Services.ExternalAuthService>();
-builder.Services.AddSingleton<IceBackend.Application.Interfaces.ICdnUrlSigner, IceBackend.Infrastructure.Services.CdnUrlSigner>();
+builder.Services.AddScoped<IceBackend.Application.Interfaces.ICdnUrlSigner, IceBackend.Infrastructure.Services.CdnUrlSigner>();
+builder.Services.AddScoped<IceBackend.Application.Interfaces.ICosmeticAssetQueryService, IceBackend.Infrastructure.Queries.CosmeticAssetQueryService>();
 builder.Services.AddScoped<IceBackend.Application.Interfaces.IAssetTokenService, IceBackend.Infrastructure.Services.AssetTokenService>();
+
+// Client Context: Scoped service populated by middleware from X-Client-Architecture header
+builder.Services.AddScoped<IceBackend.Api.Middleware.ClientContext>();
+builder.Services.AddScoped<IceBackend.Application.Interfaces.IClientContext>(sp => sp.GetRequiredService<IceBackend.Api.Middleware.ClientContext>());
+
+// Inventory: Repository + Use Cases
+builder.Services.AddScoped<IceBackend.Application.Interfaces.IInventoryRepository, IceBackend.Infrastructure.Repositories.InventoryRepository>();
+builder.Services.AddScoped<IceBackend.Application.UseCases.Inventory.EquipCosmeticUseCase>();
+builder.Services.AddScoped<IceBackend.Application.UseCases.Inventory.UnequipCosmeticUseCase>();
 
 // Register Health Checks
 builder.Services.AddHealthChecks()
@@ -71,6 +92,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseMiddleware<IceBackend.Api.Middleware.ClientContextMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();

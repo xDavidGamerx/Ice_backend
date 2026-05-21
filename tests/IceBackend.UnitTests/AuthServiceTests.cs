@@ -24,8 +24,12 @@ namespace IceBackend.UnitTests
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options);
 
-        private static IOptions<AuthOptions> DefaultAuthOptions() =>
-            Options.Create(new AuthOptions { SessionTtlHours = 8 });
+        private static IOptionsSnapshot<AuthOptions> DefaultAuthOptions()
+        {
+            var mock = new Mock<IOptionsSnapshot<AuthOptions>>();
+            mock.Setup(m => m.Value).Returns(new AuthOptions { SessionTtlHours = 8 });
+            return mock.Object;
+        }
 
         /// <summary>
         /// Retorna un mock de ISessionCache configurado para no hacer nada por defecto.
