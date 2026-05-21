@@ -20,6 +20,9 @@ Este archivo define las reglas detalladas de comportamiento, lectura y decisión
 
 6. **Sigue las convenciones establecidas**: Respeta la estructura documental, los formatos y las convenciones de nomenclatura definidas en el proyecto.
 
+7. **Actualización de Tareas**: Cada vez que el agente finalice o resuelva una tarea descrita en [TASKS.md](file:///D:/archivos/ice_backend/TASKS.md), debe editar dicho archivo para marcar su checkbox con una `x` (ej. cambiar `- [ ]` por `- [x]`). Esto garantiza el seguimiento preciso del avance del backlog técnico.
+
+
 ---
 
 ## Lecturas obligatorias antes de trabajar

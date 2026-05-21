@@ -32,12 +32,12 @@ Este documento contiene la lista de tareas del proyecto, estructurada para optim
 
 Aquí se consolidan y detallan las tareas pendientes del proyecto (incluyendo negocio, calidad y deuda técnica del Informe Kevin) ordenadas por prioridad de ejecución recomendada:
 
-1. - [ ] **Extraer secretos y configurar variables de entorno**
+1. - [x] **Extraer secretos y configurar variables de entorno**
    - **Prioridad**: Alta
    - **Archivos afectados**: `appsettings.json`, `.gitignore`, `docs/local-runbook.md`, [NEW] `.env.example`
    - **Descripción**: Mover connection strings, webhook secrets y llaves criptográficas API a variables de entorno y crear una plantilla de variables de entorno `.env.example`.
 
-2. - [ ] **Crear runbook de ejecución local**
+2. - [x] **Crear runbook de ejecución local**
    - **Prioridad**: Alta
    - **Archivos afectados**: [NEW] `docs/local-runbook.md`, `README.md`
    - **Descripción**: Redactar una guía técnica paso a paso con prerequisitos de .NET SDK, PostgreSQL, Redis, comandos del ciclo de vida y depuración local.
@@ -52,7 +52,7 @@ Aquí se consolidan y detallan las tareas pendientes del proyecto (incluyendo ne
    - **Archivos afectados**: `docs/local-runbook.md`, `.skills/TechnicalContextSkill.md`
    - **Descripción**: Documentar la arquitectura de sesiones Redis (`SessionToken`) descartando formalmente la migración a JWT propuesta por Kevin, ya que la sesión en Redis está plenamente decidida y operativa.
 
-5. - [ ] **Implementar Casos de Uso para Equipar y Desequipar Cosméticos**
+5. - [x] **Implementar Casos de Uso para Equipar y Desequipar Cosméticos**
    - **Prioridad**: Alta
    - **Archivos afectados**: [NEW] `src/IceBackend.Application/UseCases/Inventory/EquipCosmeticUseCase.cs`, [NEW] `src/IceBackend.Application/UseCases/Inventory/UnequipCosmeticUseCase.cs`, `src/IceBackend.Api/Controllers/InventoryController.cs`
    - **Descripción**: Desarrollar la lógica de negocio para gestionar el equipamiento activo de cosméticos asociados a la cuenta del jugador en Redis (`SADD` / `SREM` sobre sets) y persistir el estado en PostgreSQL.

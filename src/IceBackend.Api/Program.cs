@@ -1,10 +1,46 @@
+using System;
+using System.IO;
 using System.Text.Json;
 using IceBackend.Infrastructure.Data;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
+// 1. Cargar archivo .env local para desarrollo
+var envPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", ".env");
+if (!File.Exists(envPath)) 
+{
+    envPath = Path.Combine(Directory.GetCurrentDirectory(), ".env"); // Fallback
+}
+
+if (File.Exists(envPath))
+{
+    foreach (var line in File.ReadAllLines(envPath))
+    {
+        if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#")) continue;
+        var parts = line.Split('=', 2);
+        if (parts.Length == 2)
+        {
+            Environment.SetEnvironmentVariable(parts[0].Trim(), parts[1].Trim());
+        }
+    }
+}
+
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddEnvironmentVariables(); // Ensure env vars override appsettings
+
+// 2. Validación estricta de entorno (Fail-Fast)
+var postgresConn = builder.Configuration.GetConnectionString("PostgresConnection");
+if (string.IsNullOrWhiteSpace(postgresConn) || postgresConn.Contains("YOUR_POSTGRES_HOST"))
+{
+    throw new InvalidOperationException("CRITICAL ERROR: 'PostgresConnection' is missing or has a placeholder. Please configure your .env file.");
+}
+
+var redisConn = builder.Configuration.GetConnectionString("RedisConnection");
+if (string.IsNullOrWhiteSpace(redisConn) || redisConn.Contains("YOUR_REDIS_CONNECTION_STRING"))
+{
+    throw new InvalidOperationException("CRITICAL ERROR: 'RedisConnection' is missing or has a placeholder. Please configure your .env file.");
+}
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

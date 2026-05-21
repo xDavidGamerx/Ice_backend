@@ -41,11 +41,7 @@ namespace IceBackend.Application.UseCases.Inventory
 
             var clientArch = _clientContext.Architecture.Value;
 
-            // 2. Verificar propiedad del cosmético.
-            if (!await _repo.PlayerOwnsCosmeticAsync(playerId, cosmeticId))
-                return EquipResult.NotOwned;
-
-            // 3. Verificar compatibilidad de arquitectura.
+            // 2. Obtener metadatos del cosmético y validar compatibilidad (primera línea de defensa)
             var cosmetic = await _repo.GetCosmeticWithVersionsAsync(cosmeticId);
             if (cosmetic == null)
                 return EquipResult.CosmeticNotFound;
@@ -56,9 +52,13 @@ namespace IceBackend.Application.UseCases.Inventory
             if (!hasCompatibleVersion)
                 return EquipResult.ArchitectureIncompatible;
 
-            // 4. Verificar que el tipo del cosmético coincide con el slot.
+            // 3. Verificar que el tipo del cosmético coincide con el slot.
             if (cosmetic.CosmeticType != slot)
                 return EquipResult.SlotMismatch;
+
+            // 4. Verificar propiedad del cosmético (luego de asegurar compatibilidad)
+            if (!await _repo.PlayerOwnsCosmeticAsync(playerId, cosmeticId))
+                return EquipResult.NotOwned;
 
             // 5. Obtener jugador y ejecutar lógica de dominio.
             var player = await _repo.GetPlayerWithCosmeticsAsync(playerId);

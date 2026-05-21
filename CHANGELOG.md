@@ -2,6 +2,16 @@
 
 Este archivo registra las modificaciones importantes, correcciones de errores y nuevas funcionalidades implementadas en el proyecto, junto con su justificación técnica.
 
+## [2026-05-21] - Estabilización de Entorno Local y Fail-Fast de Arquitectura
+
+### Añadido
+- **Configuración de Entorno Estricta**: Creación de `.env.example` y deshardcodeo de todos los secretos y cadenas de conexión de `appsettings.json`.
+- **Validación Fail-Fast en Arranque**: Inyección de lógica en `Program.cs` para validar la existencia de variables críticas (`PostgresConnection`, `RedisConnection`), lanzando `InvalidOperationException` si faltan, garantizando un arranque seguro y determinista.
+- **Runbook Local y Docker Compose**: Documentado el proceso de inicialización local para nuevos desarrolladores (`docs/local-runbook.md`) y provista infraestructura de contenedores `docker-compose.yml` (PostgreSQL 15, Redis 7).
+
+### Mejorado
+- **Reordenamiento Fail-Fast de Inventario**: Refactorizado `EquipCosmeticUseCase` para validar la compatibilidad de arquitectura del cosmético contra el cliente como primera línea de defensa, previniendo consultas redundantes de base de datos a `PlayerCosmeticOwnership` y `Player` en caso de incompatibilidad (Legacy vs Modern).
+
 ## [2026-05-20] - Refactorización Arquitectónica, Autenticación Unificada y Seguridad de Borde
 
 ### Añadido
