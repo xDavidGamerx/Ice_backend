@@ -20,6 +20,10 @@ namespace IceBackend.Domain.Entities
 
         public UnresolvedPaymentEvent(Guid id, PaymentProvider provider, string providerEventId, string paymentIntentId, string status, string rawEvent)
         {
+            if (id == Guid.Empty) throw new ArgumentException("ID cannot be empty.", nameof(id));
+            if (string.IsNullOrWhiteSpace(providerEventId)) throw new ArgumentException("Provider Event ID cannot be empty.", nameof(providerEventId));
+            if (string.IsNullOrWhiteSpace(paymentIntentId)) throw new ArgumentException("Payment Intent ID cannot be empty.", nameof(paymentIntentId));
+
             Id = id;
             Provider = provider;
             ProviderEventId = providerEventId;

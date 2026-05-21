@@ -20,6 +20,11 @@ namespace IceBackend.Domain.Entities
 
         public CosmeticAssetVersion(Guid id, Guid cosmeticAssetId, AssetArchitecture architecture, string sha256Hash, long sizeBytes, Dictionary<string, object> metadataJson)
         {
+            if (id == Guid.Empty) throw new ArgumentException("ID cannot be empty.", nameof(id));
+            if (cosmeticAssetId == Guid.Empty) throw new ArgumentException("Cosmetic Asset ID cannot be empty.", nameof(cosmeticAssetId));
+            if (string.IsNullOrWhiteSpace(sha256Hash)) throw new ArgumentException("SHA256 hash cannot be empty.", nameof(sha256Hash));
+            if (sizeBytes <= 0) throw new ArgumentException("Size must be positive.", nameof(sizeBytes));
+
             Id = id;
             CosmeticAssetId = cosmeticAssetId;
             Architecture = architecture;

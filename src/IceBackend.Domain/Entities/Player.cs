@@ -33,6 +33,9 @@ namespace IceBackend.Domain.Entities
 
         public Player(Guid id, string username, UuidType uuidType, string? passwordHash)
         {
+            if (id == Guid.Empty) throw new ArgumentException("Player ID cannot be empty.", nameof(id));
+            if (string.IsNullOrWhiteSpace(username)) throw new ArgumentException("Username cannot be empty.", nameof(username));
+
             Id = id;
             Username = username;
             UuidType = uuidType;
@@ -53,7 +56,33 @@ namespace IceBackend.Domain.Entities
 
         public void AddExternalAuth(ExternalAuth auth)
         {
+            if (auth == null) throw new ArgumentNullException(nameof(auth));
             _externalAuths.Add(auth);
+        }
+
+        /// <summary>
+        /// Equipa un cosmético en el slot correspondiente.
+        /// El cosmético debe ser propiedad del jugador (validado externamente por el UseCase).
+        /// </summary>
+        public void EquipCosmetic(CosmeticType slot, Guid cosmeticId)
+        {
+            if (cosmeticId == Guid.Empty) throw new ArgumentException("Cosmetic ID cannot be empty.", nameof(cosmeticId));
+
+            var playerCosmetic = _equippedCosmetics.FirstOrDefault(c => c.Slot == slot)
+                ?? throw new InvalidOperationException($"Slot '{slot}' not found for player '{Id}'.");
+
+            playerCosmetic.Equip(cosmeticId);
+        }
+
+        /// <summary>
+        /// Desequipa el cosmético del slot indicado, dejándolo vacío.
+        /// </summary>
+        public void UnequipCosmetic(CosmeticType slot)
+        {
+            var playerCosmetic = _equippedCosmetics.FirstOrDefault(c => c.Slot == slot)
+                ?? throw new InvalidOperationException($"Slot '{slot}' not found for player '{Id}'.");
+
+            playerCosmetic.Unequip();
         }
     }
 }

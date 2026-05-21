@@ -76,6 +76,8 @@ Este archivo define las reglas detalladas de comportamiento, lectura y decisión
 4. Mantén la separación entre documentación de negocio y documentación técnica.
 5. Usa lenguaje claro, profesional y en español (salvo nombres técnicos de archivos o conceptos que ya existan).
 6. Si una sección requiere revisión humana, déjalo explícitamente indicado.
+7. **Organización del CHANGELOG**: Al actualizar `CHANGELOG.md`, se debe seguir estrictamente un orden cronológico inverso (lo más nuevo siempre arriba). Todos los cambios realizados en el mismo día deben consolidarse bajo una única cabecera de fecha (ej. `## [AAAA-MM-DD]`), agrupados en las subsecciones estándar (`Añadido`, `Cambiado`, `Corregido`, `Mejorado`, `Técnico`). Si la IA realiza múltiples tareas en un día, debe consolidar los cambios en el bloque de esa fecha y, en caso de dudas sobre cómo agruparlos, preguntar al usuario, si la IA no sabe que dia es pregunte al usuario o investigar.
+
 
 ---
 

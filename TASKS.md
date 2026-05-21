@@ -22,6 +22,9 @@ Este documento contiene la lista de tareas del proyecto, estructurada para optim
     *   [x] Seguridad de Borde (`AssetTokenService` con firma HMAC-SHA256 y salt por jugador).
     *   [x] Autenticación declarativa unificada con `SessionTokenAuthenticationHandler` en Redis.
     *   [x] Resiliencia de webhooks mediante tabla de auditoría `unresolved_payment_events` en Postgres.
+    *   [x] Hardening de Configuración (Options Pattern & Fail-Fast) para credenciales externas.
+    *   [x] Encapsulamiento del Dominio (Eliminar setters públicos, usar private set y métodos expresivos).
+    *   [x] Desacople de DbContext en Controladores (Implementar QueryServices como `ICosmeticAssetQueryService`).
 
 ---
 
@@ -54,10 +57,10 @@ Aquí se consolidan y detallan las tareas pendientes del proyecto (incluyendo ne
    - **Archivos afectados**: [NEW] `src/IceBackend.Application/UseCases/Inventory/EquipCosmeticUseCase.cs`, [NEW] `src/IceBackend.Application/UseCases/Inventory/UnequipCosmeticUseCase.cs`, `src/IceBackend.Api/Controllers/InventoryController.cs`
    - **Descripción**: Desarrollar la lógica de negocio para gestionar el equipamiento activo de cosméticos asociados a la cuenta del jugador en Redis (`SADD` / `SREM` sobre sets) y persistir el estado en PostgreSQL.
 
-6. - [ ] **Eliminar el acceso directo a la base de datos desde los controladores**
+6. - [x] **Eliminar el acceso directo a la base de datos desde los controladores**
    - **Prioridad**: Alta
    - **Archivos afectados**: `src/IceBackend.Api/Controllers/AssetDeliveryController.cs`, `src/IceBackend.Application/UseCases/*`
-   - **Descripción**: Implementar Casos de Uso (Use Cases) en la capa Application para orquestar la lógica y evitar inyectar o consultar `ApplicationDbContext` directamente en los API Controllers.
+   - **Descripción**: Se implementó `ICosmeticAssetQueryService` para aislar `ApplicationDbContext` de `AssetDeliveryController`.
 
 7. - [ ] **Fortalecer seguridad del Hashing de Contraseñas**
    - **Prioridad**: Alta
@@ -84,10 +87,10 @@ Aquí se consolidan y detallan las tareas pendientes del proyecto (incluyendo ne
     - **Archivos afectados**: `tests/IceBackend.IntegrationTests/*`
     - **Descripción**: Desarrollar pruebas integradas de extremo a extremo (usando Testcontainers de Postgres y Redis si es viable) para certificar webhooks de Stripe y flujos de sesión.
 
-12. - [ ] **Evitar anemia del dominio con Value Objects**
+12. - [x] **Evitar anemia del dominio con Value Objects / Encapsulamiento**
     - **Prioridad**: Media
     - **Archivos afectados**: `src/IceBackend.Domain/Entities/*`
-    - **Descripción**: Migrar tipos primitivos de negocio hacia Value Objects (como `AssetHash` o `SessionToken`) para validar invariantes de dominio directamente en las entidades.
+    - **Descripción**: Se encapsuló todo el estado mutable (`private set`) y se requiere uso de métodos expresivos o constructores para proteger las invariantes del dominio.
 
 13. - [ ] **Sistema de Rangos: Definir modelo de datos técnico y beneficios**
     - **Prioridad**: Media-Baja

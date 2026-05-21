@@ -22,10 +22,13 @@ namespace IceBackend.Domain.Entities
 
         public CosmeticAsset(Guid id, CosmeticType type, string displayName)
         {
+            if (id == Guid.Empty) throw new ArgumentException("ID cannot be empty.", nameof(id));
+            if (string.IsNullOrWhiteSpace(displayName)) throw new ArgumentException("Display name cannot be empty.", nameof(displayName));
+
             Id = id;
             CosmeticType = type;
             DisplayName = displayName;
-            AssetVersion = 1; // Default to 1
+            AssetVersion = 1;
             CreatedAt = DateTime.UtcNow;
         }
 

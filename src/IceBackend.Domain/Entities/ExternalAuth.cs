@@ -17,6 +17,10 @@ namespace IceBackend.Domain.Entities
 
         public ExternalAuth(Guid id, Guid playerId, AuthProvider provider, string externalId, string? email)
         {
+            if (id == Guid.Empty) throw new ArgumentException("ID cannot be empty.", nameof(id));
+            if (playerId == Guid.Empty) throw new ArgumentException("Player ID cannot be empty.", nameof(playerId));
+            if (string.IsNullOrWhiteSpace(externalId)) throw new ArgumentException("External ID cannot be empty.", nameof(externalId));
+
             Id = id;
             PlayerId = playerId;
             Provider = provider;

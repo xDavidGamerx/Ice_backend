@@ -19,6 +19,8 @@ namespace IceBackend.Domain.Entities
 
         internal PlayerCosmetic(Guid playerId, CosmeticType slot)
         {
+            if (playerId == Guid.Empty) throw new ArgumentException("Player ID cannot be empty.", nameof(playerId));
+
             PlayerId = playerId;
             Slot = slot;
             CosmeticId = null;
@@ -27,6 +29,8 @@ namespace IceBackend.Domain.Entities
 
         public void Equip(Guid cosmeticId)
         {
+            if (cosmeticId == Guid.Empty) throw new ArgumentException("Cosmetic ID cannot be empty.", nameof(cosmeticId));
+
             CosmeticId = cosmeticId;
             EquippedAt = DateTime.UtcNow;
         }

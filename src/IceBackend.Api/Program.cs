@@ -69,6 +69,15 @@ builder.Services.AddScoped<IceBackend.Application.Interfaces.ICdnUrlSigner, IceB
 builder.Services.AddScoped<IceBackend.Application.Interfaces.ICosmeticAssetQueryService, IceBackend.Infrastructure.Queries.CosmeticAssetQueryService>();
 builder.Services.AddScoped<IceBackend.Application.Interfaces.IAssetTokenService, IceBackend.Infrastructure.Services.AssetTokenService>();
 
+// Client Context: Scoped service populated by middleware from X-Client-Architecture header
+builder.Services.AddScoped<IceBackend.Api.Middleware.ClientContext>();
+builder.Services.AddScoped<IceBackend.Application.Interfaces.IClientContext>(sp => sp.GetRequiredService<IceBackend.Api.Middleware.ClientContext>());
+
+// Inventory: Repository + Use Cases
+builder.Services.AddScoped<IceBackend.Application.Interfaces.IInventoryRepository, IceBackend.Infrastructure.Repositories.InventoryRepository>();
+builder.Services.AddScoped<IceBackend.Application.UseCases.Inventory.EquipCosmeticUseCase>();
+builder.Services.AddScoped<IceBackend.Application.UseCases.Inventory.UnequipCosmeticUseCase>();
+
 // Register Health Checks
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<ApplicationDbContext>("db_check");
@@ -83,6 +92,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseMiddleware<IceBackend.Api.Middleware.ClientContextMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
