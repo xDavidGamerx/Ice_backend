@@ -18,18 +18,18 @@ namespace IceBackend.Api.Controllers
     public class AssetDeliveryController : ControllerBase
     {
         private readonly ISessionCache _sessionCache;
-        private readonly ApplicationDbContext _dbContext;
+        private readonly ICosmeticAssetQueryService _queryService;
         private readonly ICdnUrlSigner _cdnUrlSigner;
         private readonly IAssetTokenService _assetTokenService;
 
         public AssetDeliveryController(
             ISessionCache sessionCache,
-            ApplicationDbContext dbContext,
+            ICosmeticAssetQueryService queryService,
             ICdnUrlSigner cdnUrlSigner,
             IAssetTokenService assetTokenService)
         {
             _sessionCache = sessionCache;
-            _dbContext = dbContext;
+            _queryService = queryService;
             _cdnUrlSigner = cdnUrlSigner;
             _assetTokenService = assetTokenService;
         }
@@ -46,31 +46,12 @@ namespace IceBackend.Api.Controllers
         [HttpGet("info/{id:guid}")]
         public async Task<IActionResult> GetCosmeticAssetInfo(Guid id)
         {
-            var cosmetic = await _dbContext.CosmeticAssets
-                .Include(c => c.Versions)
-                .FirstOrDefaultAsync(c => c.Id == id);
+            var responseDto = await _queryService.GetCosmeticAssetInfoAsync(id);
 
-            if (cosmetic == null)
+            if (responseDto == null)
             {
                 return NotFound(new { message = "Cosmetic not found" });
             }
-
-            var versionDtos = cosmetic.Versions.Select(v => new CosmeticVersionDto
-            {
-                Arch = v.Architecture.ToString(),
-                Hash = v.Sha256Hash,
-                SizeBytes = v.SizeBytes,
-                Metadata = v.MetadataJson ?? new Dictionary<string, object>()
-            }).ToList();
-
-            var responseDto = new CosmeticAssetDto
-            {
-                Id = cosmetic.Id,
-                Type = cosmetic.CosmeticType.ToString(),
-                DisplayName = cosmetic.DisplayName,
-                AssetVersion = cosmetic.AssetVersion,
-                Versions = versionDtos
-            };
 
             return Ok(responseDto);
         }

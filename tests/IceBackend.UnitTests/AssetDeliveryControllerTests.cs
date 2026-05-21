@@ -39,12 +39,13 @@ namespace IceBackend.UnitTests
             mockSessionCache.Setup(s => s.IsCosmeticOwnedAsync(playerId, cosmeticId))
                 .ReturnsAsync(false);
 
+            var mockQueryService = new Mock<ICosmeticAssetQueryService>();
             var mockCdnSigner = new Mock<ICdnUrlSigner>();
             var mockAssetTokenService = new Mock<IAssetTokenService>();
 
             var controller = new AssetDeliveryController(
                 mockSessionCache.Object, 
-                dbContext, 
+                mockQueryService.Object, 
                 mockCdnSigner.Object, 
                 mockAssetTokenService.Object);
 
@@ -79,6 +80,7 @@ namespace IceBackend.UnitTests
             mockSessionCache.Setup(s => s.IsCosmeticOwnedAsync(playerId, cosmeticId))
                 .ReturnsAsync(true);
 
+            var mockQueryService = new Mock<ICosmeticAssetQueryService>();
             var mockCdnSigner = new Mock<ICdnUrlSigner>();
             
             var mockAssetTokenService = new Mock<IAssetTokenService>();
@@ -87,7 +89,7 @@ namespace IceBackend.UnitTests
 
             var controller = new AssetDeliveryController(
                 mockSessionCache.Object, 
-                dbContext, 
+                mockQueryService.Object, 
                 mockCdnSigner.Object, 
                 mockAssetTokenService.Object);
 
@@ -122,6 +124,7 @@ namespace IceBackend.UnitTests
             var invalidToken = "invalid-token";
 
             var mockSessionCache = new Mock<ISessionCache>();
+            var mockQueryService = new Mock<ICosmeticAssetQueryService>();
             var mockCdnSigner = new Mock<ICdnUrlSigner>();
             
             var mockAssetTokenService = new Mock<IAssetTokenService>();
@@ -131,7 +134,7 @@ namespace IceBackend.UnitTests
 
             var controller = new AssetDeliveryController(
                 mockSessionCache.Object, 
-                dbContext, 
+                mockQueryService.Object, 
                 mockCdnSigner.Object, 
                 mockAssetTokenService.Object);
 
@@ -154,6 +157,7 @@ namespace IceBackend.UnitTests
 
             var mockSessionCache = new Mock<ISessionCache>();
             
+            var mockQueryService = new Mock<ICosmeticAssetQueryService>();
             var mockCdnSigner = new Mock<ICdnUrlSigner>();
             mockCdnSigner.Setup(s => s.GeneratePresignedUrl(assetHash))
                 .Returns((expectedCdnUrl, DateTime.UtcNow.AddMinutes(1)));
@@ -165,7 +169,7 @@ namespace IceBackend.UnitTests
 
             var controller = new AssetDeliveryController(
                 mockSessionCache.Object, 
-                dbContext, 
+                mockQueryService.Object, 
                 mockCdnSigner.Object, 
                 mockAssetTokenService.Object);
 

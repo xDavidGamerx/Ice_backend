@@ -11,7 +11,7 @@ namespace IceBackend.Infrastructure.Services
     {
         private readonly CdnOptions _options;
 
-        public CdnUrlSigner(IOptions<CdnOptions> options)
+        public CdnUrlSigner(IOptionsSnapshot<CdnOptions> options)
         {
             _options = options.Value;
         }

@@ -11,7 +11,7 @@ namespace IceBackend.Infrastructure.Services
     {
         private readonly CdnOptions _cdnOptions;
 
-        public AssetTokenService(IOptions<CdnOptions> cdnOptions)
+        public AssetTokenService(IOptionsSnapshot<CdnOptions> cdnOptions)
         {
             _cdnOptions = cdnOptions.Value;
         }

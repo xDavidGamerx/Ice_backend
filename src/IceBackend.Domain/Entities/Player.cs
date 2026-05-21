@@ -1,22 +1,59 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using IceBackend.Domain.Enums;
 
 namespace IceBackend.Domain.Entities
 {
     public class Player
     {
-        public Guid Id { get; set; }
-        public string Username { get; set; } = null!;
-        public UuidType UuidType { get; set; }
-        public string? PasswordHash { get; set; }
-        public string? SessionHash { get; set; }
-        public DateTime CreatedAt { get; set; }
+        public Guid Id { get; private set; }
+        public string Username { get; private set; } = null!;
+        public UuidType UuidType { get; private set; }
+        public string? PasswordHash { get; private set; }
+        public string? SessionHash { get; private set; }
+        public DateTime CreatedAt { get; private set; }
 
-        public ICollection<PlayerCosmetic> EquippedCosmetics { get; set; } = new List<PlayerCosmetic>();
-        public ICollection<ExternalAuth> ExternalAuths { get; set; } = new List<ExternalAuth>();
-        public ICollection<BootstrapToken> BootstrapTokens { get; set; } = new List<BootstrapToken>();
-        public ICollection<PlayerCosmeticOwnership> CosmeticOwnerships { get; set; } = new List<PlayerCosmeticOwnership>();
-        public ICollection<PaymentEvent> PaymentEvents { get; set; } = new List<PaymentEvent>();
+        private readonly List<PlayerCosmetic> _equippedCosmetics = new();
+        public IReadOnlyCollection<PlayerCosmetic> EquippedCosmetics => _equippedCosmetics.AsReadOnly();
+
+        private readonly List<ExternalAuth> _externalAuths = new();
+        public IReadOnlyCollection<ExternalAuth> ExternalAuths => _externalAuths.AsReadOnly();
+
+        private readonly List<BootstrapToken> _bootstrapTokens = new();
+        public IReadOnlyCollection<BootstrapToken> BootstrapTokens => _bootstrapTokens.AsReadOnly();
+
+        private readonly List<PlayerCosmeticOwnership> _cosmeticOwnerships = new();
+        public IReadOnlyCollection<PlayerCosmeticOwnership> CosmeticOwnerships => _cosmeticOwnerships.AsReadOnly();
+
+        private readonly List<PaymentEvent> _paymentEvents = new();
+        public IReadOnlyCollection<PaymentEvent> PaymentEvents => _paymentEvents.AsReadOnly();
+
+        private Player() { } // Constructor for EF Core
+
+        public Player(Guid id, string username, UuidType uuidType, string? passwordHash)
+        {
+            Id = id;
+            Username = username;
+            UuidType = uuidType;
+            PasswordHash = passwordHash;
+            CreatedAt = DateTime.UtcNow;
+
+            InitializeCosmeticSlots();
+        }
+
+        private void InitializeCosmeticSlots()
+        {
+            var cosmeticSlots = Enum.GetValues(typeof(CosmeticType)).Cast<CosmeticType>();
+            foreach (var slot in cosmeticSlots)
+            {
+                _equippedCosmetics.Add(new PlayerCosmetic(Id, slot));
+            }
+        }
+
+        public void AddExternalAuth(ExternalAuth auth)
+        {
+            _externalAuths.Add(auth);
+        }
     }
 }

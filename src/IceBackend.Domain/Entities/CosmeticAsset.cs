@@ -1,43 +1,42 @@
+using System;
+using System.Collections.Generic;
 using IceBackend.Domain.Enums;
 
 namespace IceBackend.Domain.Entities
 {
-    /// <summary>
-    /// Cosmético lógico del catálogo de ICE Launcher.
-    ///
-    /// IMPORTANTE — Modelo CAS:
-    /// ─ Esta entidad NO almacena URLs, hashes ni blobs binarios directamente.
-    /// ─ Los binarios viven en <see cref="CosmeticAssetVersion"/> (1 fila por arquitectura).
-    /// ─ La entrega física al cliente siempre pasa por CDN; nunca por esta API.
-    /// </summary>
     public class CosmeticAsset
     {
-        public Guid Id { get; set; }
+        public Guid Id { get; private set; }
+        public CosmeticType CosmeticType { get; private set; }
+        public string DisplayName { get; private set; } = null!;
+        public int AssetVersion { get; private set; }
+        public DateTime CreatedAt { get; private set; }
 
-        /// <summary>Tipo de slot en el personaje (HAT, WING, CAPE, …).</summary>
-        public CosmeticType CosmeticType { get; set; }
+        private readonly List<CosmeticAssetVersion> _versions = new();
+        public IReadOnlyCollection<CosmeticAssetVersion> Versions => _versions.AsReadOnly();
 
-        /// <summary>Nombre visible en el Launcher (ej. "Sombrero del Capitán").</summary>
-        public string DisplayName { get; set; } = null!;
+        private readonly List<PlayerCosmeticOwnership> _ownerships = new();
+        public IReadOnlyCollection<PlayerCosmeticOwnership> Ownerships => _ownerships.AsReadOnly();
 
-        /// <summary>
-        /// Versión lógica del cosmético.
-        /// Se incrementa cada vez que se sube una revisión nueva de cualquier arquitectura.
-        /// Permite al Launcher invalidar su caché local comparando este número.
-        /// </summary>
-        public int AssetVersion { get; set; }
+        private CosmeticAsset() { }
 
-        /// <summary>Fecha en que el cosmético fue incorporado al catálogo.</summary>
-        public DateTime CreatedAt { get; set; }
+        public CosmeticAsset(Guid id, CosmeticType type, string displayName)
+        {
+            Id = id;
+            CosmeticType = type;
+            DisplayName = displayName;
+            AssetVersion = 1; // Default to 1
+            CreatedAt = DateTime.UtcNow;
+        }
 
-        // ── Relaciones ──────────────────────────────────────────────────────────
+        public void IncrementVersion()
+        {
+            AssetVersion++;
+        }
 
-        /// <summary>
-        /// Versiones binarias del cosmético agrupadas por arquitectura.
-        /// El Launcher filtra esta colección según su versión de Minecraft.
-        /// </summary>
-        public ICollection<CosmeticAssetVersion> Versions { get; set; } = new List<CosmeticAssetVersion>();
-
-        public ICollection<PlayerCosmeticOwnership> Ownerships { get; set; } = new List<PlayerCosmeticOwnership>();
+        public void AddVersion(CosmeticAssetVersion version)
+        {
+            _versions.Add(version);
+        }
     }
 }

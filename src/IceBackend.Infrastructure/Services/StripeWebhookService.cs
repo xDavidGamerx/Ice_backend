@@ -186,16 +186,14 @@ namespace IceBackend.Infrastructure.Services
         {
             if (playerId == null)
             {
-                var unresolvedEvent = new UnresolvedPaymentEvent
-                {
-                    Id = Guid.NewGuid(),
-                    Provider = PaymentProvider.STRIPE,
-                    ProviderEventId = webhookEvent.EventId,
-                    PaymentIntentId = ExtractPaymentIntentId(webhookEvent.DataObjectJson),
-                    Status = status == "unhandled" ? "unhandled" : "PENDING_RESOLUTION",
-                    RawEvent = webhookEvent.DataObjectJson,
-                    ProcessedAt = DateTime.UtcNow
-                };
+                var unresolvedEvent = new UnresolvedPaymentEvent(
+                    Guid.NewGuid(),
+                    PaymentProvider.STRIPE,
+                    webhookEvent.EventId,
+                    ExtractPaymentIntentId(webhookEvent.DataObjectJson),
+                    status == "unhandled" ? "unhandled" : "PENDING_RESOLUTION",
+                    webhookEvent.DataObjectJson
+                );
 
                 _dbContext.UnresolvedPaymentEvents.Add(unresolvedEvent);
                 await _dbContext.SaveChangesAsync();
@@ -203,17 +201,15 @@ namespace IceBackend.Infrastructure.Services
             }
             else
             {
-                var paymentEvent = new PaymentEvent
-                {
-                    Id = Guid.NewGuid(),
-                    Provider = PaymentProvider.STRIPE,
-                    ProviderEventId = webhookEvent.EventId,
-                    PaymentIntentId = ExtractPaymentIntentId(webhookEvent.DataObjectJson),
-                    PlayerId = playerId.Value,
-                    Status = status,
-                    RawEvent = webhookEvent.DataObjectJson,
-                    ProcessedAt = DateTime.UtcNow
-                };
+                var paymentEvent = new PaymentEvent(
+                    Guid.NewGuid(),
+                    PaymentProvider.STRIPE,
+                    webhookEvent.EventId,
+                    ExtractPaymentIntentId(webhookEvent.DataObjectJson),
+                    playerId.Value,
+                    status,
+                    webhookEvent.DataObjectJson
+                );
 
                 _dbContext.PaymentEvents.Add(paymentEvent);
                 await _dbContext.SaveChangesAsync();
