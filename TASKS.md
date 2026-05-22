@@ -62,10 +62,10 @@ Aquí se consolidan y detallan las tareas pendientes del proyecto (incluyendo ne
    - **Archivos afectados**: `src/IceBackend.Api/Controllers/AssetDeliveryController.cs`, `src/IceBackend.Application/UseCases/*`
    - **Descripción**: Se implementó `ICosmeticAssetQueryService` para aislar `ApplicationDbContext` de `AssetDeliveryController`.
 
-7. - [ ] **Fortalecer seguridad del Hashing de Contraseñas**
+7. - [x] **Fortalecer seguridad del Hashing de Contraseñas y Desacoplar Hasher**
    - **Prioridad**: Alta
-   - **Archivos afectados**: `src/IceBackend.Infrastructure/Services/AuthService.cs`
-   - **Descripción**: Sustituir el hashing SHA256 con salt fijo por un algoritmo criptográfico robusto de passwords (como el `PasswordHasher` nativo de ASP.NET Core Identity o BCrypt).
+   - **Archivos afectados**: `src/IceBackend.Infrastructure/Services/AuthService.cs`, `src/IceBackend.Application/Interfaces/IPasswordHasher.cs`, `src/IceBackend.Infrastructure/Services/BcryptPasswordHasher.cs`
+   - **Descripción**: Sustituir el hashing SHA256 con salt fijo por un algoritmo robusto (BCrypt). Se desacopló mediante `IPasswordHasher`, parametrizando `BcryptWorkFactor` y `LegacySalt` en variables de entorno, y se implementó una transacción atómica para el flujo de auto-rehash transparente en login.
 
 8. - [ ] **Sincronizar esquema de Base de Datos SQL**
    - **Prioridad**: Alta

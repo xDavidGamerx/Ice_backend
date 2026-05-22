@@ -2,6 +2,28 @@
 
 Este archivo registra las modificaciones importantes, correcciones de errores y nuevas funcionalidades implementadas en el proyecto, junto con su justificación técnica.
 
+## [2026-05-22] - Refactorización de Hashing y Desacople de IPasswordHasher
+
+### Añadido
+- **Interfaz IPasswordHasher**: Creado contrato `IPasswordHasher` en `IceBackend.Application` para desacoplar la API de autenticación de las implementaciones criptográficas específicas.
+- **Implementación BcryptPasswordHasher**: Creada clase `BcryptPasswordHasher` en `IceBackend.Infrastructure` usando `BCrypt.Net` y `SHA256` para validación legacy.
+- **Validación al Inicio (ValidateOnStart)**: Agregada validación estricta de rango de `BcryptWorkFactor` (entre 4 y 15) mediante anotaciones en `AuthOptions` en el arranque de la API.
+- **Variables de Entorno**: Añadido soporte para inyectar `BcryptWorkFactor` y `LegacySalt` (secreto heredado) a través de variables de entorno (`Auth__BcryptWorkFactor`, `Auth__LegacySalt`), eliminando secretos de `appsettings.json`.
+
+### Cambiado
+- **Refactorización de AuthService**: Inyectado `IPasswordHasher` en `AuthService` y eliminadas dependencias estáticas directas a `BCrypt` y `SHA256`.
+- **Atomicidad de Migración**: Envuelto el flujo de auto-rehash (migración transparente de hash SHA-256 a BCrypt en el primer login) en una transacción de base de datos (`BeginTransactionAsync`), asegurando que fallos en la persistencia del nuevo hash invaliden el login temporalmente sin comprometer el acceso heredado del usuario.
+- **Tests Unitarios**: Actualizada la suite de pruebas unitarias existente en `AuthServiceTests.cs` para inyectar `BcryptPasswordHasher` con factor de coste 4 (óptimo para velocidad de ejecución de tests).
+
+### Técnico
+- Creada suite de pruebas unitarias dedicada `BcryptPasswordHasherTests.cs` (6 tests nuevos) que certifica de forma aislada la lógica de hashing BCrypt, verificación, detección de hashes legacy y matching del formato antiguo SHA-256.
+
+## [2026-05-21] - Certificación de Hashing BCrypt y Consolidación de Tareas Completadas
+
+### Técnico
+- **Certificación de Hashing BCrypt**: Verificada y confirmada la implementación completa de BCrypt en `AuthService` con los 3 puntos: (1) registro con `BCrypt.Net.BCrypt.HashPassword()`, (2) detección de hash legacy SHA-256 con auto-rehash a BCrypt en login, (3) validación BCrypt nativa para usuarios migrados. Suite de 16/16 tests unitarios aprobados, 0 errores de compilación.
+- **TASKS.md actualizado**: Tarea 7 marcada como completada.
+
 ## [2026-05-21] - Estabilización de Entorno Local y Fail-Fast de Arquitectura
 
 ### Añadido

@@ -97,6 +97,7 @@ builder.Services.AddOptions<IceBackend.Application.Options.CdnOptions>()
     .ValidateOnStart();
 builder.Services.AddHttpClient("oauth"); // Named HttpClient para llamadas a providers OAuth2
 builder.Services.AddScoped<IceBackend.Application.Interfaces.ISessionCache, IceBackend.Infrastructure.Services.RedisSessionCache>();
+builder.Services.AddScoped<IceBackend.Application.Interfaces.IPasswordHasher, IceBackend.Infrastructure.Services.BcryptPasswordHasher>();
 builder.Services.AddScoped<IceBackend.Application.Interfaces.IAuthService, IceBackend.Infrastructure.Services.AuthService>();
 builder.Services.AddScoped<IceBackend.Application.Interfaces.IStripeWebhookValidator, IceBackend.Infrastructure.Services.StripeWebhookValidator>();
 builder.Services.AddScoped<IceBackend.Application.Interfaces.IStripeWebhookService, IceBackend.Infrastructure.Services.StripeWebhookService>();

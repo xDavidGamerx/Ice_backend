@@ -22,12 +22,18 @@ namespace IceBackend.UnitTests
         private static ApplicationDbContext GetInMemoryDbContext() =>
             new(new DbContextOptionsBuilder<ApplicationDbContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+                .ConfigureWarnings(x => x.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
                 .Options);
 
         private static IOptionsSnapshot<AuthOptions> DefaultAuthOptions()
         {
             var mock = new Mock<IOptionsSnapshot<AuthOptions>>();
-            mock.Setup(m => m.Value).Returns(new AuthOptions { SessionTtlHours = 8 });
+            mock.Setup(m => m.Value).Returns(new AuthOptions 
+            { 
+                SessionTtlHours = 8,
+                BcryptWorkFactor = 4, // Rápido para tests
+                LegacySalt = "IceLauncherSecretSalt"
+            });
             return mock.Object;
         }
 
@@ -51,7 +57,9 @@ namespace IceBackend.UnitTests
         private static AuthService BuildAuthService(ApplicationDbContext ctx, Mock<ISessionCache>? cacheMock = null)
         {
             cacheMock ??= BuildSessionCacheMock();
-            return new AuthService(ctx, cacheMock.Object, DefaultAuthOptions());
+            var options = DefaultAuthOptions();
+            var hasher = new BcryptPasswordHasher(options);
+            return new AuthService(ctx, cacheMock.Object, options, hasher);
         }
 
         // ── Register ─────────────────────────────────────────────────────────────
@@ -180,6 +188,75 @@ namespace IceBackend.UnitTests
             var result2 = await sut.LoginIceAccountAsync("tokenUser", "pass");
 
             Assert.NotEqual(result1!.Value.SessionToken, result2!.Value.SessionToken);
+        }
+
+        [Fact]
+        public async Task RegisterIceAccountAsync_ShouldStoreBcryptHash()
+        {
+            using var context = GetInMemoryDbContext();
+            var sut = BuildAuthService(context);
+
+            var player = await sut.RegisterIceAccountAsync("bcryptUser", "mySecurePassword123");
+
+            Assert.NotNull(player.PasswordHash);
+            Assert.StartsWith("$2", player.PasswordHash); // BCrypt prefix
+        }
+
+        [Fact]
+        public async Task LoginIceAccountAsync_ShouldSucceedAndRehash_WhenLegacyUserLogsIn()
+        {
+            using var context = GetInMemoryDbContext();
+            var sut = BuildAuthService(context);
+
+            // Crear manualmente un usuario con hash legacy SHA-256
+            const string username = "legacyUser";
+            const string password = "legacyPassword123";
+            var legacyHash = HashLegacyPasswordInTest(password);
+
+            var player = new Player(Guid.NewGuid(), username, UuidType.ICE, legacyHash);
+            context.Players.Add(player);
+            await context.SaveChangesAsync();
+
+            // Intentar login: debe tener éxito y migrar a BCrypt de forma transparente
+            var loginResult = await sut.LoginIceAccountAsync(username, password);
+
+            Assert.NotNull(loginResult);
+            
+            // Recargar de la DB para verificar el nuevo hash
+            var updatedPlayer = await context.Players.FindAsync(player.Id);
+            Assert.NotNull(updatedPlayer);
+            Assert.NotNull(updatedPlayer.PasswordHash);
+            Assert.StartsWith("$2", updatedPlayer.PasswordHash); // Verificamos que es BCrypt ahora
+
+            // Segundo login: debe continuar funcionando ahora usando validación BCrypt nativa
+            var secondLoginResult = await sut.LoginIceAccountAsync(username, password);
+            Assert.NotNull(secondLoginResult);
+        }
+
+        [Fact]
+        public async Task LoginIceAccountAsync_ShouldNotRehash_WhenBcryptUserLogsIn()
+        {
+            using var context = GetInMemoryDbContext();
+            var sut = BuildAuthService(context);
+
+            var player = await sut.RegisterIceAccountAsync("alreadyBcryptUser", "password123");
+            var originalHash = player.PasswordHash;
+
+            var loginResult = await sut.LoginIceAccountAsync("alreadyBcryptUser", "password123");
+            Assert.NotNull(loginResult);
+
+            // Recargar de la DB
+            var reloadedPlayer = await context.Players.FindAsync(player.Id);
+            Assert.NotNull(reloadedPlayer);
+            Assert.Equal(originalHash, reloadedPlayer.PasswordHash); // No debió cambiar el hash
+        }
+
+        private static string HashLegacyPasswordInTest(string password)
+        {
+            using var sha256 = System.Security.Cryptography.SHA256.Create();
+            var bytes = System.Text.Encoding.UTF8.GetBytes(password + "IceLauncherSecretSalt");
+            var hash = sha256.ComputeHash(bytes);
+            return Convert.ToBase64String(hash);
         }
     }
 }

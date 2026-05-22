@@ -1,7 +1,5 @@
 using System;
-using System.Linq;
 using System.Security.Cryptography;
-using System.Text;
 using System.Threading.Tasks;
 using IceBackend.Application.Interfaces;
 using IceBackend.Application.Options;
@@ -17,15 +15,18 @@ namespace IceBackend.Infrastructure.Services
     {
         private readonly ApplicationDbContext _dbContext;
         private readonly ISessionCache _sessionCache;
+        private readonly IPasswordHasher _passwordHasher;
         private readonly TimeSpan _sessionTtl;
 
         public AuthService(
             ApplicationDbContext dbContext,
             ISessionCache sessionCache,
-            IOptionsSnapshot<AuthOptions> authOptions)
+            IOptionsSnapshot<AuthOptions> authOptions,
+            IPasswordHasher passwordHasher)
         {
             _dbContext = dbContext;
             _sessionCache = sessionCache;
+            _passwordHasher = passwordHasher;
             _sessionTtl = TimeSpan.FromHours(authOptions.Value.SessionTtlHours);
         }
 
@@ -44,7 +45,7 @@ namespace IceBackend.Infrastructure.Services
                 Guid.NewGuid(),
                 username,
                 UuidType.ICE,
-                HashPassword(password)
+                _passwordHasher.Hash(password)
             );
 
             _dbContext.Players.Add(newPlayer);
@@ -58,14 +59,48 @@ namespace IceBackend.Infrastructure.Services
             var player = await _dbContext.Players
                 .FirstOrDefaultAsync(p => p.Username.ToLower() == username.ToLower() && p.UuidType == UuidType.ICE);
 
-            if (player == null)
+            if (player == null || string.IsNullOrEmpty(player.PasswordHash))
             {
                 return null;
             }
 
-            if (player.PasswordHash != HashPassword(password))
+            bool isValid = false;
+            bool needsRehash = false;
+
+            if (_passwordHasher.IsLegacyHash(player.PasswordHash))
+            {
+                // Detección de Hash Legacy (SHA-256)
+                var legacyHash = _passwordHasher.HashLegacy(password);
+                isValid = (player.PasswordHash == legacyHash);
+                needsRehash = isValid; // Si es válido con SHA-256, marcamos para re-hashing automático
+            }
+            else
+            {
+                // Validación BCrypt nativa
+                isValid = _passwordHasher.Verify(password, player.PasswordHash);
+            }
+
+            if (!isValid)
             {
                 return null;
+            }
+
+            // Re-Hashing automático transparente protegido por transacción para atomicidad (seguridad en migración)
+            if (needsRehash)
+            {
+                using var transaction = await _dbContext.Database.BeginTransactionAsync();
+                try
+                {
+                    var newBcryptHash = _passwordHasher.Hash(password);
+                    player.UpdatePasswordHash(newBcryptHash);
+                    await _dbContext.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    return null; // Login reporta fallo para no comprometer el acceso ni la sesión
+                }
             }
 
             // Generar token de sesión de forma segura en el servidor (nunca viene del cliente).
@@ -84,14 +119,6 @@ namespace IceBackend.Infrastructure.Services
             var bytes = new byte[32];
             RandomNumberGenerator.Fill(bytes);
             return Convert.ToBase64String(bytes);
-        }
-
-        private static string HashPassword(string password)
-        {
-            using var sha256 = SHA256.Create();
-            var bytes = Encoding.UTF8.GetBytes(password + "IceLauncherSecretSalt");
-            var hash = sha256.ComputeHash(bytes);
-            return Convert.ToBase64String(hash);
         }
     }
 }

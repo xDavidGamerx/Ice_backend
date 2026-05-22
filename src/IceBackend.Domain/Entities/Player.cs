@@ -61,6 +61,17 @@ namespace IceBackend.Domain.Entities
         }
 
         /// <summary>
+        /// Actualiza de forma segura el hash de la contraseña utilizando un formato más robusto (BCrypt).
+        /// </summary>
+        public void UpdatePasswordHash(string newPasswordHash)
+        {
+            if (string.IsNullOrWhiteSpace(newPasswordHash))
+                throw new ArgumentException("Password hash cannot be empty.", nameof(newPasswordHash));
+
+            PasswordHash = newPasswordHash;
+        }
+
+        /// <summary>
         /// Equipa un cosmético en el slot correspondiente.
         /// El cosmético debe ser propiedad del jugador (validado externamente por el UseCase).
         /// </summary>
