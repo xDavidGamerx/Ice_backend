@@ -42,10 +42,10 @@ Aquí se consolidan y detallan las tareas pendientes del proyecto (incluyendo ne
    - **Archivos afectados**: [NEW] `docs/local-runbook.md`, `README.md`
    - **Descripción**: Redactar una guía técnica paso a paso con prerequisitos de .NET SDK, PostgreSQL, Redis, comandos del ciclo de vida y depuración local.
 
-3. - [ ] **Implementar flujo de login local para desarrollo**
+3. - [x] **Implementar flujo de login local para desarrollo**
    - **Prioridad**: Alta
    - **Archivos afectados**: `IceBackend.Api`, `IceBackend.Application`, `IceBackend.Infrastructure`
-   - **Descripción**: Crear un endpoint de pruebas o login local (con seeders de prueba) que devuelva un `SessionToken` válido para poder testear Swagger/Postman sin depender del cliente externo.
+   - **Descripción**: Creado endpoint `POST /api/v1/dev/login` protegido por guardia de entorno (`IsDevelopment`), token maestro (`DEV_MASTER_TOKEN`) y oculto de Swagger. Sesiones aisladas con prefijo `dev_session:` en Redis. `GetPlayerIdBySessionAsync` resuelve ambos prefijos.
 
 4. - [ ] **Sincerar y documentar estrategia de sesión en Redis**
    - **Prioridad**: Media
@@ -67,15 +67,15 @@ Aquí se consolidan y detallan las tareas pendientes del proyecto (incluyendo ne
    - **Archivos afectados**: `src/IceBackend.Infrastructure/Services/AuthService.cs`, `src/IceBackend.Application/Interfaces/IPasswordHasher.cs`, `src/IceBackend.Infrastructure/Services/BcryptPasswordHasher.cs`
    - **Descripción**: Sustituir el hashing SHA256 con salt fijo por un algoritmo robusto (BCrypt). Se desacopló mediante `IPasswordHasher`, parametrizando `BcryptWorkFactor` y `LegacySalt` en variables de entorno, y se implementó una transacción atómica para el flujo de auto-rehash transparente en login.
 
-8. - [ ] **Sincronizar esquema de Base de Datos SQL**
+8. - [x] **Sincronizar esquema de Base de Datos SQL**
    - **Prioridad**: Alta
    - **Archivos afectados**: `docs/database.sql`
-   - **Descripción**: Sincronizar el script SQL manual con las migraciones reales de EF Core para asegurar que represente fielmente el estado actual del modelo de datos.
+   - **Descripción**: Sincronizar el script SQL manual con las migraciones reales de EF Core para asegurar que represente fielmente el estado actual del modelo de datos (UUIDs, TIMESTAMPTZ, JSONB, indices GIN).
 
-9. - [ ] **Implementar Middleware Global de Manejo de Errores**
+9. - [x] **Implementar Middleware Global de Manejo de Errores**
    - **Prioridad**: Media-Alta
-   - **Archivos afectados**: `src/IceBackend.Api/Middlewares/ExceptionHandlingMiddleware.cs`, `src/IceBackend.Api/Program.cs`
-   - **Descripción**: Capturar excepciones de forma centralizada y retornar respuestas uniformes tipo `ProblemDetails` (RFC 7807) en lugar de llenar los controladores con bloques try/catch repetitivos.
+   - **Archivos afectados**: `src/IceBackend.Api/Middleware/ExceptionHandlingMiddleware.cs`, `src/IceBackend.Api/Program.cs`
+   - **Descripción**: Capturar excepciones de forma centralizada y retornar respuestas uniformes tipo `ProblemDetails` (RFC 7807) censurando información sensible en desarrollo y ocultando detalles en producción.
 
 10. - [ ] **Configurar sistema de Logs Estructurados (Serilog)**
     - **Prioridad**: Media
@@ -93,6 +93,11 @@ Aquí se consolidan y detallan las tareas pendientes del proyecto (incluyendo ne
     - **Descripción**: Se encapsuló todo el estado mutable (`private set`) y se requiere uso de métodos expresivos o constructores para proteger las invariantes del dominio.
 
 13. - [ ] **Sistema de Rangos: Definir modelo de datos técnico y beneficios**
-    - **Prioridad**: Media-Baja
-    - **Archivos afectados**: `src/IceBackend.Domain/Entities/PlayerRange.cs`, `src/IceBackend.Infrastructure/Data/ApplicationDbContext.cs`, `docs/database.sql`
-    - **Descripción**: Diseñar e implementar el modelo de datos de rangos, la relación relacional con los jugadores, y la lógica en memoria en Redis para cachear los beneficios activos del rango del jugador.
+     - **Prioridad**: Media-Baja
+     - **Archivos afectados**: `src/IceBackend.Domain/Entities/PlayerRange.cs`, `src/IceBackend.Infrastructure/Data/ApplicationDbContext.cs`, `docs/database.sql`
+     - **Descripción**: Diseñar e implementar el modelo de datos de rangos, la relación relacional con los jugadores, y la lógica en memoria en Redis para cachear los beneficios activos del rango del jugador.
+
+14. - [ ] **Configurar CORS (Cross-Origin Resource Sharing)**
+     - **Prioridad**: Media
+     - **Archivos afectados**: `src/IceBackend.Api/Program.cs`, `appsettings.json`
+     - **Descripción**: Registrar y configurar políticas de CORS en el pipeline de ASP.NET Core que permitan al launcher (origen del cliente Electron) consumir la API, y a `localhost` para desarrollo. Debe ser restrictivo: solo orígenes explícitamente listados, sin permitir `AllowAnyOrigin()` en producción.

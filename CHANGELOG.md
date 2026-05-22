@@ -2,37 +2,44 @@
 
 Este archivo registra las modificaciones importantes, correcciones de errores y nuevas funcionalidades implementadas en el proyecto, junto con su justificación técnica.
 
-## [2026-05-22] - Refactorización de Hashing y Desacople de IPasswordHasher
+## [2026-05-22] - Endpoint DevLogin, Middleware de Errores y Refactor de Hashing
 
 ### Añadido
-- **Interfaz IPasswordHasher**: Creado contrato `IPasswordHasher` en `IceBackend.Application` para desacoplar la API de autenticación de las implementaciones criptográficas específicas.
-- **Implementación BcryptPasswordHasher**: Creada clase `BcryptPasswordHasher` en `IceBackend.Infrastructure` usando `BCrypt.Net` y `SHA256` para validación legacy.
-- **Validación al Inicio (ValidateOnStart)**: Agregada validación estricta de rango de `BcryptWorkFactor` (entre 4 y 15) mediante anotaciones en `AuthOptions` en el arranque de la API.
-- **Variables de Entorno**: Añadido soporte para inyectar `BcryptWorkFactor` y `LegacySalt` (secreto heredado) a través de variables de entorno (`Auth__BcryptWorkFactor`, `Auth__LegacySalt`), eliminando secretos de `appsettings.json`.
+- **Endpoint DevLogin (`POST /api/v1/dev/login`)**: Controlador `DevAuthController` exclusivo para desarrollo local. Protegido con triple barrera: guardia de entorno (`Development`), token maestro (`DEV_MASTER_TOKEN`) con fail-fast en constructor, y oculto de Swagger.
+- **Sesiones de desarrollo aisladas (`dev_session:`)**: Nuevos métodos `SetDevSessionAsync`/`RemoveDevSessionAsync` en `ISessionCache`/`RedisSessionCache` con prefijos `dev_session:*`.
+- **Resolución transparente de sesiones**: `GetPlayerIdBySessionAsync` busca primero en sesiones reales y luego en desarrollo como fallback.
+- **Limpieza dual en `RemoveSessionAsync`**: Revoca claves reales y de desarrollo del mismo jugador.
+- **Middleware de Excepciones Global**: `ExceptionHandlingMiddleware` unifica errores bajo `ProblemDetails` (RFC 7807), ocultando `Detail` en producción y censurando información sensible en desarrollo.
+- **Interfaz `IPasswordHasher`**: Contrato en `IceBackend.Application` para desacoplar autenticación de implementaciones criptográficas.
+- **Implementación `BcryptPasswordHasher`**: Clase en `IceBackend.Infrastructure` usando `BCrypt.Net` + `SHA256` para validación legacy.
+- **Validación al Inicio (`ValidateOnStart`)**: Rango de `BcryptWorkFactor` (4-15) validado al arrancar.
+- **Variables de Entorno**: `Auth__BcryptWorkFactor` y `Auth__LegacySalt` eliminando secretos de `appsettings.json`.
+- **Pruebas de Middleware**: `ExceptionHandlingMiddlewareTests.cs` con 2 tests de mapeo 400/403 y redacción de trazas.
 
 ### Cambiado
-- **Refactorización de AuthService**: Inyectado `IPasswordHasher` en `AuthService` y eliminadas dependencias estáticas directas a `BCrypt` y `SHA256`.
-- **Atomicidad de Migración**: Envuelto el flujo de auto-rehash (migración transparente de hash SHA-256 a BCrypt en el primer login) en una transacción de base de datos (`BeginTransactionAsync`), asegurando que fallos en la persistencia del nuevo hash invaliden el login temporalmente sin comprometer el acceso heredado del usuario.
-- **Tests Unitarios**: Actualizada la suite de pruebas unitarias existente en `AuthServiceTests.cs` para inyectar `BcryptPasswordHasher` con factor de coste 4 (óptimo para velocidad de ejecución de tests).
+- **Refactorización de `AuthService`**: Inyectado `IPasswordHasher`, eliminadas dependencias estáticas a `BCrypt`/`SHA256`.
+- **Atomicidad de Migración**: Auto-rehash envuelto en transacción de base de datos.
+- **Tests Unitarios**: `AuthServiceTests` actualizado para inyectar `BcryptPasswordHasher`.
+- **Sincronización de Base de Datos**: `docs/database.sql` sincronizado con tipos exactos, transaccionalidad e idempotencia.
 
 ### Técnico
-- Creada suite de pruebas unitarias dedicada `BcryptPasswordHasherTests.cs` (6 tests nuevos) que certifica de forma aislada la lógica de hashing BCrypt, verificación, detección de hashes legacy y matching del formato antiguo SHA-256.
+- Suite `BcryptPasswordHasherTests.cs` (6 tests) certificando hashing BCrypt, verificación, detección legacy y matching SHA-256.
+- Sin nuevas dependencias NuGet; sin cambios en `IAuthService` ni `SessionTokenAuthenticationHandler`.
+- 24/24 tests unitarios aprobados sin regresiones.
 
-## [2026-05-21] - Certificación de Hashing BCrypt y Consolidación de Tareas Completadas
-
-### Técnico
-- **Certificación de Hashing BCrypt**: Verificada y confirmada la implementación completa de BCrypt en `AuthService` con los 3 puntos: (1) registro con `BCrypt.Net.BCrypt.HashPassword()`, (2) detección de hash legacy SHA-256 con auto-rehash a BCrypt en login, (3) validación BCrypt nativa para usuarios migrados. Suite de 16/16 tests unitarios aprobados, 0 errores de compilación.
-- **TASKS.md actualizado**: Tarea 7 marcada como completada.
-
-## [2026-05-21] - Estabilización de Entorno Local y Fail-Fast de Arquitectura
+## [2026-05-21] - Fail-Fast de Arquitectura y Certificación BCrypt
 
 ### Añadido
-- **Configuración de Entorno Estricta**: Creación de `.env.example` y deshardcodeo de todos los secretos y cadenas de conexión de `appsettings.json`.
-- **Validación Fail-Fast en Arranque**: Inyección de lógica en `Program.cs` para validar la existencia de variables críticas (`PostgresConnection`, `RedisConnection`), lanzando `InvalidOperationException` si faltan, garantizando un arranque seguro y determinista.
-- **Runbook Local y Docker Compose**: Documentado el proceso de inicialización local para nuevos desarrolladores (`docs/local-runbook.md`) y provista infraestructura de contenedores `docker-compose.yml` (PostgreSQL 15, Redis 7).
+- **Configuración de Entorno Estricta**: Creación de `.env.example` y deshardcodeo de secretos de `appsettings.json`.
+- **Validación Fail-Fast en Arranque**: Validación de variables críticas (`PostgresConnection`, `RedisConnection`) en `Program.cs`.
+- **Runbook Local y Docker Compose**: Documentación de inicialización local (`docs/local-runbook.md`) y `docker-compose.yml` (PostgreSQL 15, Redis 7).
 
 ### Mejorado
-- **Reordenamiento Fail-Fast de Inventario**: Refactorizado `EquipCosmeticUseCase` para validar la compatibilidad de arquitectura del cosmético contra el cliente como primera línea de defensa, previniendo consultas redundantes de base de datos a `PlayerCosmeticOwnership` y `Player` en caso de incompatibilidad (Legacy vs Modern).
+- **Reordenamiento Fail-Fast de Inventario**: `EquipCosmeticUseCase` valida compatibilidad de arquitectura (Legacy vs Modern) antes de consultas redundantes a BD.
+
+### Técnico
+- **Certificación de Hashing BCrypt**: Verificada implementación completa: (1) registro con `BCrypt.Net.BCrypt.HashPassword()`, (2) detección legacy SHA-256 con auto-rehash, (3) validación BCrypt nativa. Suite de 16/16 tests unitarios aprobados.
+- **TASKS.md actualizado**: Tarea 7 marcada como completada.
 
 ## [2026-05-20] - Refactorización Arquitectónica, Autenticación Unificada y Seguridad de Borde
 

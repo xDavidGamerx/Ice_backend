@@ -45,5 +45,16 @@ namespace IceBackend.Application.Interfaces
         /// Debe implementar patrón Cache-Aside.
         /// </summary>
         Task<Guid?> GetCosmeticIdByHashAsync(string hash);
+
+        /// <summary>
+        /// Persiste un token de sesión de desarrollo con prefijo aislado (dev_session:).
+        /// No debe interferir con sesiones reales de OAuth2.
+        /// </summary>
+        Task SetDevSessionAsync(string playerId, string sessionToken, TimeSpan ttl);
+
+        /// <summary>
+        /// Remueve una sesión de desarrollo y sus claves inversas en Redis.
+        /// </summary>
+        Task RemoveDevSessionAsync(string playerId);
     }
 }

@@ -20,6 +20,8 @@ namespace IceBackend.Infrastructure.Services
     {
         private const string KeyPrefix = "session:player:";
         private const string TokenPrefix = "session:token:";
+        private const string DevKeyPrefix = "dev_session:player:";
+        private const string DevTokenPrefix = "dev_session:token:";
         private const string InventoryPrefix = "inventory:player:";
         private const string HashMappingPrefix = "asset:hash:";
         
@@ -60,15 +62,25 @@ namespace IceBackend.Infrastructure.Services
 
         public async Task RemoveSessionAsync(string playerId)
         {
+            // Limpiar sesión real
             var sessionToken = await GetSessionAsync(playerId);
             await _cache.RemoveAsync(BuildKey(playerId));
             if (sessionToken != null) await _cache.RemoveAsync($"{TokenPrefix}{sessionToken}");
+
+            // Limpiar sesión de desarrollo si existe
+            await RemoveDevSessionAsync(playerId);
+
             await InvalidatePlayerCosmeticsAsync(Guid.Parse(playerId));
         }
 
         public async Task<string?> GetPlayerIdBySessionAsync(string sessionToken)
         {
+            // 1. Intentar sesión real
             var playerBytes = await _cache.GetAsync($"{TokenPrefix}{sessionToken}");
+            if (playerBytes != null) return Encoding.UTF8.GetString(playerBytes);
+
+            // 2. Fallback a sesión de desarrollo (dev_session:)
+            playerBytes = await _cache.GetAsync($"{DevTokenPrefix}{sessionToken}");
             return playerBytes is null ? null : Encoding.UTF8.GetString(playerBytes);
         }
 
@@ -136,6 +148,24 @@ namespace IceBackend.Infrastructure.Services
             }
 
             return assetId;
+        }
+
+        public async Task SetDevSessionAsync(string playerId, string sessionToken, TimeSpan ttl)
+        {
+            var options = new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = ttl };
+            await _cache.SetAsync($"{DevKeyPrefix}{playerId}", Encoding.UTF8.GetBytes(sessionToken), options);
+            await _cache.SetAsync($"{DevTokenPrefix}{sessionToken}", Encoding.UTF8.GetBytes(playerId), options);
+        }
+
+        public async Task RemoveDevSessionAsync(string playerId)
+        {
+            var tokenBytes = await _cache.GetAsync($"{DevKeyPrefix}{playerId}");
+            if (tokenBytes != null)
+            {
+                var token = Encoding.UTF8.GetString(tokenBytes);
+                await _cache.RemoveAsync($"{DevTokenPrefix}{token}");
+            }
+            await _cache.RemoveAsync($"{DevKeyPrefix}{playerId}");
         }
 
         private static string BuildKey(string playerId) => $"{KeyPrefix}{playerId}";
