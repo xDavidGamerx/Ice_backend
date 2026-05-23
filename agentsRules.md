@@ -98,7 +98,7 @@ Este archivo define las reglas detalladas de comportamiento, lectura y decisión
 
 - No agregues funcionalidades, módulos, pantallas, endpoints, integraciones, tecnologías o reglas de negocio que no estén documentadas.
 - No asumas relaciones, flujos o comportamientos que no estén explícitamente descritos.
-- No inventes beneficios de rangos, tipos de cosméticos, mecánicas comerciales o cualquier otro detalle del producto.
+- No inventes beneficios de membresías, tipos de cosméticos, mecánicas comerciales o cualquier otro detalle del producto.
 - Si algo no está documentado, documéntalo como información pendiente. No lo des por sentado.
 
 ---

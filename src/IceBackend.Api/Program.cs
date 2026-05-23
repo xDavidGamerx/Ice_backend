@@ -109,9 +109,7 @@ builder.Services.AddScoped<IceBackend.Application.Interfaces.IAssetTokenService,
 // Servicios de Dominio y Firmadores Criptográficos (Clean Architecture / DDD)
 builder.Services.AddHttpClient<IceBackend.Domain.Services.IMojangSessionValidator, IceBackend.Infrastructure.Services.MojangSessionValidator>();
 builder.Services.AddScoped<IceBackend.Domain.Services.ICosmeticTokenSigner, IceBackend.Infrastructure.Services.CosmeticTokenSigner>();
-builder.Services.AddScoped<IceBackend.Domain.Services.IRangeTokenSigner, IceBackend.Infrastructure.Services.RangeTokenSigner>();
 builder.Services.AddScoped<IceBackend.Domain.Services.CosmeticEquipmentPolicy>();
-builder.Services.AddScoped<IceBackend.Domain.Services.RangeAssignmentService>();
 
 
 // Client Context: Scoped service populated by middleware from X-Client-Architecture header

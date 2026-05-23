@@ -30,7 +30,7 @@ El problema central es que actualmente existe un launcher de Minecraft funcional
 - No hay una forma clara de asociar productos virtuales a un usuario.
 - No hay diferenciación entre tipos de cuenta (ICE vs Microsoft).
 - No hay una fuente central de verdad que el launcher, la tienda web y otros canales puedan consultar.
-- No hay un modelo comercial estructurado que permita vender cosméticos y rangos de forma coherente.
+- No hay un modelo comercial estructurado que permita vender cosméticos y membresías ICE+ de forma coherente.
 - La experiencia del usuario se siente fragmentada y sin continuidad.
 
 El sistema busca resolver exactamente eso: construir la base que convierta un launcher aislado en una plataforma conectada, con identidad, personalización, monetización y potencial de crecimiento.
@@ -60,7 +60,7 @@ La visión final es que ICE Launcher se convierta en una plataforma con identida
 
 El sistema está pensado para operar a través de varios canales que comparten una misma lógica central:
 
-1. **Launcher de escritorio**: Es el canal principal. Está construido con Electron y consume información del backend para mostrar el estado del usuario, su perfil, su tipo de cuenta, sus cosméticos disponibles, sus rangos activos, su información comercial y cualquier otra funcionalidad asociada a su cuenta. El launcher actúa como una extensión viva de la cuenta del usuario.
+1. **Launcher de escritorio**: Es el canal principal. Está construido con Electron y consume información del backend para mostrar el estado del usuario, su perfil, su tipo de cuenta, sus cosméticos disponibles, su membresía ICE+ activa, su información comercial y cualquier otra funcionalidad asociada a su cuenta. El launcher actúa como una extensión viva de la cuenta del usuario.
 
 2. **Tienda web**: Es un canal complementario. Su objetivo es mostrar productos, permitir compras y ofrecer acceso a información comercial del ecosistema sin obligar al usuario a pasar exclusivamente por el launcher. La tienda no es algo separado, sino una dimensión comercial del mismo ecosistema.
 
