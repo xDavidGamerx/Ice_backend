@@ -88,27 +88,25 @@ La plataforma debe soportar ambos escenarios sin romper la lógica de negocio ni
 
 El modelo comercial contempla dos grandes categorías de productos virtuales:
 
-1. **Cosméticos**: Son elementos visuales o de personalización. Incluyen capas, animaciones y posiblemente otros elementos visuales que se definan más adelante. Su propósito es aportar diferenciación visual y valor estético. No están pensados como ventajas funcionales directas, sino como elementos de apariencia, identidad o presentación.
+1. **Cosméticos**: Son elementos visuales o de personalización. Incluyen capas, animaciones y posiblemente otros elementos visuales que se definan más adelante. Su propósito es aportar diferenciación visual y valor estético. No están pensados como ventajas funcionales d2. **Suscripción ICE+ (Premium - Estilo Lunar+)**: ICE+ es una suscripción mensual, periódica o de pago único diseñada para mejorar integralmente la experiencia del usuario dentro del Launcher y el ecosistema. No representa privilegios de servidor tradicionales, sino una membresía estética y funcional global.
 
-2. **Rangos (Suscripción Plus - Estilo Lunar+/Lunar++)**: Los rangos en ICE Launcher no representan privilegios de un servidor de juego jerárquico tradicional, sino una **suscripción premium global del ecosistema (ICE+ / ICE++)**. Su valor radica en el otorgamiento de beneficios de personalización premium, estatus visual destacado dentro del Launcher y la comunidad, acceso a cosméticos exclusivos y características extendidas en el cliente. Son un modelo recurrente de monetización global para el ecosistema.
-
-La diferencia fundamental es: los cosméticos son personalización visual individual, los rangos son una membresía de beneficios y estatus estético global.
+La diferencia fundamental es: los cosméticos son elementos de personalización visual individuales que se compran por separado, mientras que ICE+ es una suscripción recurrente que otorga un paquete de beneficios activos y privilegios exclusivos globales.
 
 ---
 
 ## Experiencia esperada para el usuario
 
-La experiencia que se busca construir puede describirse así:
+Un usuario entra al ecosistema ICE Launcher con su cuenta ICE. Si tiene una cuenta Microsoft premium, puede vincularla.
 
-Un usuario entra al ecosistema ICE Launcher. Puede hacerlo con su cuenta ICE. Si aplica, también puede vincular o usar su cuenta Microsoft/Minecraft premium.
+Al ingresar, el Launcher detecta si el usuario tiene una suscripción ICE+ activa. Si está activa, el Launcher desbloquea inmediatamente toda la gama de características premium:
+- Desbloqueo y renderizado de cosméticos exclusivos de ICE+ en su inventario.
+- Icono evolutivo de ICE+ al lado de su nombre, reflejando el color correspondiente a sus meses de suscripción acumulados.
+- Activación de la física de movimiento en sus capas (Cloth Cloaks).
+- Interfaz del Launcher sin anuncios de publicidad.
+- Posibilidad de añadir amigos sin límites.
+- Aplicación de un 10% de descuento automático si decide comprar otros cosméticos individuales en la tienda web.
 
-Una vez dentro, el sistema reconoce quién es el usuario, qué tipo de cuenta tiene, qué información asociada posee y qué contenido le corresponde.
-
-Desde el launcher, el usuario no solo ve una interfaz para abrir el juego, sino una experiencia más rica: ve su perfil, su identidad, sus opciones de personalización, acceso a elementos visuales, su estado comercial y sus beneficios activos.
-
-Además, el usuario puede descubrir productos dentro del ecosistema, comprarlos y ver reflejadas esas compras de forma consistente en su cuenta. Esto incluye cosméticos visibles, contenido desbloqueado y rangos con beneficios aplicables a su experiencia.
-
-La experiencia debe sentirse como un solo producto. El usuario tiene una identidad persistente. Sus compras están ligadas a esa identidad.
+Si la suscripción expira o es cancelada, el Launcher bloquea los accesos, oculta el icono de ICE+ y revoca el uso de cosméticos exclusivos, pero conserva intacto el registro de "meses acumulados" para que, en caso de re-suscripción futura, el usuario retome su nivel de icono evolutivo donde lo dejó.
 
 ---
 
@@ -117,79 +115,58 @@ La experiencia debe sentirse como un solo producto. El usuario tiene una identid
 Del contexto se desprenden las siguientes reglas estrictas de negocio:
 
 1.  **Identidad Raíz**: Todo usuario posee una cuenta ICE como identidad base persistente en el sistema. La cuenta de Microsoft es un complemento opcional.
-2.  **Diferenciación de Cuentas**: La plataforma debe identificar y dar soporte tanto a usuarios solo-ICE (no premium) como a usuarios con cuenta Microsoft vinculada sin tratarlos de forma idéntica.
-3.  **Segregación de Catálogo**: Los cosméticos (personalización puramente visual) y los rangos (membresía de beneficios estéticos) son categorías de producto distintas con lógicas de negocio separadas que no deben mezclarse.
-4.  **Vigencia e Inventario**: Los productos adquiridos se asocian permanentemente a la cuenta ICE del usuario y deben propagarse de forma consistente e inmediata.
-5.  **Compatibilidad Universal de Versiones (Soporte Multi-versión)**: El Launcher da soporte completo a la ejecución de todas las versiones de Minecraft (desde la versión 1.8.9 Legacy hasta la versión más reciente del juego). Por ende, el backend debe garantizar la retrocompatibilidad absoluta en la entrega de metadatos y assets, discriminando adecuadamente entre la arquitectura Legacy (modelos planos/OBJ en 1.8.9) y Modern (BBMODEL/GeckoLib en versiones más recientes) según la versión que inicie el Launcher.
+2.  **Diferenciación de Cuentas**: La plataforma debe identificar y dar soporte tanto a usuarios solo-ICE (no premium) como a usuarios con cuenta Microsoft vinculada.
+3.  **Segregación de Catálogo**: Los cosméticos individuales y la suscripción ICE+ son categorías distintas con lógicas de negocio separadas que no deben mezclarse.
+4.  **Vigencia e Inventario**: Los beneficios de ICE+ solo están vigentes mientras la suscripción esté activa, con excepción del contador de meses acumulados.
+5.  **Acumulación de Tiempo (Icono Evolutivo)**: Cada mes en que el usuario pague e inicie su ciclo de suscripción, se incrementa en uno el contador de meses acumulados. Este contador es persistente, acumulativo e irreversible; no se reinicia a cero si la suscripción se cancela temporalmente.
+6.  **Descuento Coherente**: El 10% de descuento en la tienda web requiere verificar en el backend que el usuario tiene la suscripción ICE+ activa en el momento de calcular el precio del checkout.
+7.  **Compatibilidad Universal de Versiones (Soporte Multi-versión)**: El Launcher da soporte completo a la ejecución de todas las versiones de Minecraft. El backend debe discriminar entre la arquitectura Legacy (modelos planos/OBJ en 1.8.9) y Modern (BBMODEL/GeckoLib en versiones más recientes) para los cosméticos exclusivos de ICE+.
 
 ---
 
 ## Principios del Producto
 
--   **Experiencia Unificada (Omnicanalidad)**: La experiencia debe ser coherente y homogénea en todos los canales (Launcher, Tienda Web y Panel de Gestión). La fuente de verdad técnica es única y compartida.
+-   **Experiencia Unificada (Omnicanalidad)**: La experiencia debe ser coherente en todos los canales. La tienda web y el launcher leen el estado de la suscripción de la misma fuente de verdad en Redis/PostgreSQL.
 -   **El Launcher como Eje Central**: Es la cara principal del ecosistema, operando como una extensión visual interactiva del perfil y pertenencias del usuario.
--   **Diseño Extensible**: La plataforma se concibe como un sistema preparado para la expansión comercial y funcional continua sin alterar la infraestructura existente.
+-   **Diseño Extensible**: La plataforma se concibe como un sistema preparado para la expansión comercial continua sin alterar la infraestructura existente.
 
 ---
 
 ## Límites de interpretación
 
-- Este documento no define cómo se implementa técnicamente nada. No habla de endpoints, APIs, bases de datos, frameworks, servicios externos, código, variables de entorno ni infraestructura.
-- No se debe asumir que el sistema tiene funcionalidades que no están descritas aquí. Si no está documentado en esta skill, no es parte del contexto de negocio vigente de este repo.
-- No se debe inventar tipos de productos, categorías, beneficios, mecánicas comerciales, flujos de usuario o comportamientos del sistema que no estén explícitamente mencionados o que no se deriven directamente de lo mencionado.
+- Este documento no define cómo se implementa técnicamente nada. No habla de endpoints, APIs, bases de datos, ni variables de entorno.
+- No se debe asumir que el sistema tiene funcionalidades que no están descritas aquí.
 - La existencia de un backend es conceptual. Este documento describe qué debe hacer, no cómo debe construirse.
 
 ---
 
 ## Lo que no debe asumirse
 
-- No se debe asumir que todos los usuarios tienen cuenta premium de Minecraft.
-- No se debe asumir que todos los usuarios tienen cuenta Microsoft.
-- No se debe asumir que los cosméticos solo incluyen capas y animaciones. Es posible que hayan más tipos, pero no están definidos.
-- No se debe asumir que los rangos tienen una lista completa de beneficios definida. Esa información está pendiente.
-- No se debe asumir que el sistema ya tiene una tienda web operativa. Es una posibilidad futura.
-- No se debe asumir que el panel de gestión existe o está planificado a corto plazo. Es una visualización natural, no un requisito confirmado.
-- No se debe asumir que los productos tienen una duración o vigencia específica. Eso no está definido.
-- No se debe asumir que el launcher actual ya está conectado a un backend. Precisamente ese es el vacío que se busca llenar.
+- No se debe asumir que todos los usuarios tienen cuenta premium de Minecraft o de Microsoft.
+- No se debe asumir que el sistema ya tiene un portal de Discord completamente automatizado o bots configurados.
+- No se debe asumir que el sistema ya tiene la tienda web totalmente integrada. Es una posibilidad futura.
+- No se debe asumir que los cosméticos de ICE+ no pueden cambiar de catálogo. Son exclusividades pero pueden variar.
 
 ---
 
 ## Ambigüedades detectadas
 
-1. **Naturaleza exacta de los "beneficios" de los rangos**: El contexto dice que los rangos "dan beneficios" y tienen relación con el launcher y otros elementos del ecosistema, pero no especifica qué tipo de beneficios, cómo se aplican, cómo se gestionan ni cómo se reflejan en la experiencia del usuario.
-
-2. **Relación entre el rango y su dimensión visual**: Se menciona que un rango "puede tener además una dimensión visual o simbólica", pero no queda claro si esa dimensión visual es parte inherente del rango, un cosmético aparte, o algo que se configura independientemente.
-
-3. **El concepto de "estado comercial" del usuario**: Se menciona en varios lugares que el sistema debe mostrar el "estado comercial" del usuario, pero no se define qué información compone ese estado ni cómo se determina.
-
-4. **Nivel de integración entre la cuenta Microsoft y el ecosistema ICE**: Se menciona que aporta "contexto adicional" e "información visual o de personalización", pero no se especifica qué información concreta se obtiene ni cómo se utiliza dentro de la plataforma.
+1. **La entrega del Emote Mensual**: Se menciona que al inicio de cada mes se entrega un emote aleatorio. Queda pendiente definir técnicamente si esto se hace mediante un proceso en segundo plano (cron job) en base de datos al inicio de mes cronológico, o bien al momento del cobro del ciclo recurrente de cada usuario en Stripe webhook.
+2. **Nivel de integración de Discord**: No se especifica cómo el backend informará al bot de Discord sobre el estado de la suscripción para asignar roles.
 
 ---
 
 ## Información pendiente por definir
 
-1. **Lista final de tipos de cosméticos**: Solo se mencionan capas y animaciones como ejemplos. El resto está por definir.
-
-2. **Definición exacta de los beneficios de cada rango**: No se sabe qué beneficios otorga cada rango, cómo se estructuran ni cómo se entregan al usuario.
-
-3. **Duración o vigencia de los productos**: No está definido si los productos (cosméticos o rangos) son permanentes, tienen fecha de expiración, requieren renovación o tienen algún otro modelo de vigencia.
-
-4. **Comportamiento de las mecánicas comerciales**: No se han detallado los flujos de compra, los métodos de pago, las políticas de reembolso, las promociones o cualquier otra mecánica relacionada con la venta de productos.
-
-5. **Detalles del panel de gestión**: Es una visualización natural pero no hay requisitos, prioridades ni alcance definido.
-
-6. **Alcance completo de la tienda web**: Se menciona como canal futuro pero sin especificar funcionalidades, catálogo completo, integraciones ni límites.
-
-7. **Modelo de relación entre rangos y otros elementos del ecosistema**: Se menciona que los rangos tienen "relación con el launcher y con otros elementos del ecosistema", pero no se explica cuál es esa relación.
+1. **Lista final de cosméticos exclusivos de ICE+**: Se mencionan capas, mochilas, bandannas y el emote "Default Dance", pero los IDs y recursos visuales están por definir.
+2. **Definición de los 15 colores del Icono Evolutivo**: Los hitos exactos de meses acumulados para cada una de las 15 variantes de colores del icono rosa con signo más verde.
 
 ---
 
 ## Resumen operativo para futuros agentes
 
-ICE Launcher es un ecosistema digital centrado en un launcher de Minecraft que busca evolucionar hacia una plataforma completa de identidad, personalización y monetización.
+ICE Launcher es un ecosistema digital centrado en un launcher de Minecraft. El producto estrella de monetización recurrente es la suscripción premium **ICE+** (estilo Lunar+).
 
-El sistema debe permitir que un usuario entre al ecosistema con su cuenta ICE (y opcionalmente vincule una cuenta Microsoft premium), sea reconocido según su tipo de cuenta, acceda a su información y contenido, compre productos virtuales (cosméticos visuales y rangos con beneficios) y reciba una experiencia coherente y conectada a través del launcher de escritorio, una futura tienda web y posiblemente un panel de gestión.
+El sistema debe permitir que un usuario con cuenta ICE adquiera una suscripción ICE+ (con renovación mensual o pago único). Mientras la suscripción esté activa, el usuario goza de cosméticos exclusivos, físicas en capas, lista de amigos ilimitada, launcher sin anuncios, 10% de descuento en tienda y un icono evolutivo en el Launcher que cambia de color según los meses acumulados que tenga la cuenta (los meses son acumulativos y no se resetean ante cancelaciones).
 
-La cuenta ICE es la identidad principal. Los cosméticos son personalización visual. Los rangos otorgan beneficios. Estas dos categorías no deben mezclarse. El sistema debe ser la fuente principal de verdad de todo el ecosistema.
-
-Antes de proponer cambios, documentar, diseñar flujos o tomar decisiones, lee y respeta el contenido completo de esta skill. No agregues funcionalidades que no estén aquí. No inventes capacidades. No incluyas contenido técnico. Trabaja siempre dentro de los límites de lo que el contexto del negocio realmente dice.
+Antes de proponer cambios, documentar, diseñar flujos o tomar decisiones, lee y respeta el contenido completo de esta skill. Trabaja siempre dentro de los límites de lo que el contexto del negocio realmente dice.eto de esta skill. No agregues funcionalidades que no estén aquí. No inventes capacidades. No incluyas contenido técnico. Trabaja siempre dentro de los límites de lo que el contexto del negocio realmente dice.

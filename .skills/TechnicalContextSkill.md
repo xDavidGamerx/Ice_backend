@@ -79,7 +79,7 @@ docs/
     *   Flujo OAuth2 PKCE para Microsoft/Google implementado para sincronización de identidades externas (`Confirmado`).
 *   **Entrega de Activos**: Asset Delivery API con Just-in-Time delivery, tokens efímeros firmados con HMAC-SHA256 y redirección temporal 307 al CDN (`Confirmado`).
 *   **Auditoría**: Sistema de auditoría en la tabla `unresolved_payment_events` para webhooks de pago huérfanos en Stripe (`Confirmado`).
-*   **Rangos e Inventario**: Lógica técnica para equipar cosméticos y modelo técnico de beneficios de rangos (`Pendiente de definición técnica y confirmación humana`).
+*   **Suscripción ICE+ e Inventario**: Lógica técnica para equipar cosméticos y modelo técnico de beneficios de la suscripción ICE+ (`Pendiente de definición técnica y confirmación humana`).
 
 ---
 
@@ -100,4 +100,4 @@ docs/
 
 ## Información pendiente o ambigua
 
-- No se ha detallado el modelo de datos final ni las implicaciones funcionales para la gestión técnica de Rangos y sus beneficios.
+- No se ha detallado el modelo de datos final ni las implicaciones funcionales para la gestión técnica de la Suscripción ICE+ y sus beneficios.

@@ -61,5 +61,16 @@ namespace IceBackend.Application.Interfaces
         /// Purgado atómico de todas las sesiones de un jugador en Redis (ZSET autolimpiable con script Lua).
         /// </summary>
         Task PurgePlayerSessionsAsync(Guid playerId);
+
+        /// <summary>
+        /// Obtiene los beneficios activos de la suscripción ICE+ del jugador mediante Cache-Aside.
+        /// Retorna null si la suscripción no está activa.
+        /// </summary>
+        Task<IceBackend.Domain.Services.IcePlusBenefits?> GetIcePlusBenefitsAsync(Guid playerId);
+
+        /// <summary>
+        /// Invalida la clave de caché de la suscripción del jugador en Redis.
+        /// </summary>
+        Task InvalidatePlayerSubscriptionAsync(Guid playerId);
     }
 }

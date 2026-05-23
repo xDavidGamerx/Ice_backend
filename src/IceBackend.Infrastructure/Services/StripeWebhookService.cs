@@ -129,7 +129,24 @@ namespace IceBackend.Infrastructure.Services
 
             await PersistPaymentEventAsync(webhookEvent, player.Id, status: "paid");
 
-            // Purga de caché para reflejar nuevos cosméticos adquiridos
+            // Lógica de Suscripción ICE+
+            var stripeSubId = ExtractStripeSubscriptionId(webhookEvent.DataObjectJson);
+            var billingReason = ExtractStripeBillingReason(webhookEvent.DataObjectJson);
+
+            // Activar por defecto 30 días
+            player.AssignIcePlusSubscription(stripeSubId, autoRenew: true, durationDays: 30, DateTime.UtcNow);
+
+            // Incrementar meses acumulados si es una creación o renovación legítima de ciclo de suscripción
+            if (billingReason == "subscription_create" || billingReason == "subscription_cycle")
+            {
+                player.IncrementIcePlusMonths(DateTime.UtcNow);
+                _logger.LogInformation("Incremented accumulated subscription months for PlayerId: {PlayerId}", player.Id);
+            }
+
+            await _dbContext.SaveChangesAsync();
+
+            // Purga de caché para reflejar la suscripción y cosméticos adquiridos
+            await _sessionCache.InvalidatePlayerSubscriptionAsync(player.Id);
             await _sessionCache.InvalidatePlayerCosmeticsAsync(player.Id);
             
             _logger.LogInformation("Invoice paid processed and cache invalidated for PlayerId: {PlayerId}", player.Id);
@@ -149,10 +166,15 @@ namespace IceBackend.Infrastructure.Services
 
             await PersistPaymentEventAsync(webhookEvent, player.Id, status: "payment_failed");
 
+            // Desactivar suscripción activa por fallo de pago
+            player.CancelIcePlusSubscription(DateTime.UtcNow);
+            await _dbContext.SaveChangesAsync();
+
             // Invalidar caché ante fallo de pago para revocar accesos temporales
+            await _sessionCache.InvalidatePlayerSubscriptionAsync(player.Id);
             await _sessionCache.InvalidatePlayerCosmeticsAsync(player.Id);
             
-            _logger.LogWarning("Payment failed for PlayerId: {PlayerId}. Inventory cache invalidated.", player.Id);
+            _logger.LogWarning("Payment failed for PlayerId: {PlayerId}. Inventory and subscription cache invalidated.", player.Id);
         }
 
         private async Task HandleSubscriptionDeletedAsync(WebhookEventDto webhookEvent)
@@ -169,11 +191,16 @@ namespace IceBackend.Infrastructure.Services
 
             await PersistPaymentEventAsync(webhookEvent, player.Id, status: "subscription_cancelled");
 
-            // Purga completa de sesión e inventario
+            // Cancelar suscripción en PostgreSQL
+            player.CancelIcePlusSubscription(DateTime.UtcNow);
+            await _dbContext.SaveChangesAsync();
+
+            // Purga completa de sesión, suscripción e inventario en Redis
             await _sessionCache.RemoveSessionAsync(player.Id.ToString());
+            await _sessionCache.InvalidatePlayerSubscriptionAsync(player.Id);
             await _sessionCache.InvalidatePlayerCosmeticsAsync(player.Id);
             
-            _logger.LogInformation("Session and inventory purged for PlayerId: {PlayerId} due to subscription cancellation.", player.Id);
+            _logger.LogInformation("Session, subscription and inventory purged for PlayerId: {PlayerId} due to subscription cancellation.", player.Id);
         }
 
         // ── HELPERS ───────────────────────────────────────────────────────────────
@@ -223,6 +250,7 @@ namespace IceBackend.Infrastructure.Services
             // El customerId de Stripe se almacena en ExternalAuth con Provider = "stripe".
             return await _dbContext.Players
                 .Include(p => p.ExternalAuths)
+                .Include(p => p.Subscription)
                 .FirstOrDefaultAsync(p => p.ExternalAuths.Any(
                     ea => ea.Provider == AuthProvider.STRIPE && ea.ExternalId == customerId));
         }
@@ -249,6 +277,30 @@ namespace IceBackend.Infrastructure.Services
             }
             catch { /* JSON malformado: ignorar */ }
             return "unknown";
+        }
+
+        private static string? ExtractStripeSubscriptionId(string dataObjectJson)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(dataObjectJson);
+                if (doc.RootElement.TryGetProperty("subscription", out var prop))
+                    return prop.GetString();
+            }
+            catch { }
+            return null;
+        }
+
+        private static string? ExtractStripeBillingReason(string dataObjectJson)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(dataObjectJson);
+                if (doc.RootElement.TryGetProperty("billing_reason", out var prop))
+                    return prop.GetString();
+            }
+            catch { }
+            return null;
         }
     }
 }

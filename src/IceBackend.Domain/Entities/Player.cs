@@ -13,9 +13,8 @@ namespace IceBackend.Domain.Entities
         public string? PasswordHash { get; private set; }
         public DateTime CreatedAt { get; private set; }
 
-        // Rango y Reconciliación eventual de consistencia
-        public string? ActiveRange { get; private set; }
-        public DateTime? RangeExpiresAt { get; private set; }
+        // Suscripción ICE+ y Reconciliación eventual de consistencia
+        public PlayerSubscription? Subscription { get; private set; }
         public bool RequiresSessionSync { get; private set; }
 
         // Propiedades públicas de dominio (Claves no enumerables UUID)
@@ -74,28 +73,51 @@ namespace IceBackend.Domain.Entities
             PasswordHash = newPasswordHash;
         }
 
-        // --- ASIGNACIÓN DE RANGOS ---
+        // --- GESTIÓN DE SUSCRIPCIÓN ICE+ ---
 
-        public void AssignRange(ValidatedRangeAssignmentToken token, IRangeTokenSigner signer, DateTime currentTime)
+        /// <summary>
+        /// Asigna y activa la suscripción ICE+ del jugador.
+        /// </summary>
+        public void AssignIcePlusSubscription(string? stripeSubscriptionId, bool autoRenew, int durationDays, DateTime currentTime)
         {
-            if (token == null) throw new ArgumentNullException(nameof(token));
-            if (signer == null) throw new ArgumentNullException(nameof(signer));
+            if (durationDays <= 0)
+                throw new ArgumentException("La duración de la suscripción debe ser un número positivo de días.", nameof(durationDays));
 
-            // 1. Validar la firma criptográfica simétrica del token
-            if (!signer.VerifyRange(token))
-                throw new InvalidOperationException("La firma del token de asignación de rango es inválida.");
+            var expiresAt = currentTime.AddDays(durationDays);
 
-            if (token.PlayerId != Id)
-                throw new InvalidOperationException("El token de rango no corresponde a este jugador.");
+            if (Subscription == null)
+            {
+                Subscription = new PlayerSubscription(Guid.NewGuid(), Id);
+            }
 
-            // 2. Validar expiración inyectada (prevenir replay attacks)
-            if (token.ExpiresAt.HasValue && token.ExpiresAt.Value < currentTime)
-                throw new InvalidOperationException("El token de asignación ha expirado.");
-
-            // 3. Modificar el estado del agregado e indicar reconciliación obligatoria en base de datos
-            ActiveRange = token.RangeType;
-            RangeExpiresAt = token.ExpiresAt;
+            Subscription.Activate(expiresAt, stripeSubscriptionId, autoRenew, currentTime);
             RequiresSessionSync = true;
+        }
+
+        /// <summary>
+        /// Incrementa el acumulador de meses de suscripción activa de la cuenta.
+        /// </summary>
+        public void IncrementIcePlusMonths(DateTime currentTime)
+        {
+            if (Subscription == null)
+            {
+                Subscription = new PlayerSubscription(Guid.NewGuid(), Id);
+            }
+
+            Subscription.IncrementAccumulatedMonths(currentTime);
+            RequiresSessionSync = true;
+        }
+
+        /// <summary>
+        /// Cancela la suscripción activa (la marca como inactiva de inmediato).
+        /// </summary>
+        public void CancelIcePlusSubscription(DateTime currentTime)
+        {
+            if (Subscription != null)
+            {
+                Subscription.Deactivate(currentTime);
+                RequiresSessionSync = true;
+            }
         }
 
         public void ClearSessionSync()

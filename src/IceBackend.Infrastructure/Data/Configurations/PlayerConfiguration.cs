@@ -23,16 +23,7 @@ namespace IceBackend.Infrastructure.Data.Configurations
                    .HasConversion<string>()
                    .HasMaxLength(10);
 
-            // Mapeo de rangos y reconciliación eventual
-            builder.Property(e => e.ActiveRange)
-                   .HasColumnName("active_range")
-                   .HasMaxLength(32)
-                   .IsRequired(false);
 
-            builder.Property(e => e.RangeExpiresAt)
-                   .HasColumnName("range_expires_at")
-                   .HasColumnType("timestamp with time zone")
-                   .IsRequired(false);
 
             builder.Property(e => e.RequiresSessionSync)
                    .HasColumnName("requires_session_sync")

@@ -7,9 +7,7 @@ CREATE TABLE players (
     "SessionHash" text NULL,
     "CreatedAt" timestamp with time zone NOT NULL,
     
-    -- Suscripción / Rangos (ICE+)
-    "active_range" character varying(32) NULL,
-    "range_expires_at" timestamp with time zone NULL,
+    -- Suscripción (ICE+)
     "requires_session_sync" boolean NOT NULL DEFAULT false,
     
     -- Wearables Internos (IDs secuenciales de base de datos)
@@ -141,3 +139,20 @@ CREATE TABLE unresolved_payment_events (
     CONSTRAINT "PK_unresolved_payment_events" PRIMARY KEY ("Id")
 );
 CREATE UNIQUE INDEX "IX_unresolved_payment_events_ProviderEventId" ON unresolved_payment_events ("ProviderEventId");
+
+-- 10. Suscripción Premium del Jugador (player_subscriptions)
+CREATE TABLE player_subscriptions (
+    "Id" uuid NOT NULL,
+    "PlayerId" uuid NOT NULL,
+    "IsActive" boolean NOT NULL DEFAULT false,
+    "ExpiresAt" timestamp with time zone NULL,
+    "StripeSubscriptionId" character varying(255) NULL,
+    "AutoRenew" boolean NOT NULL DEFAULT false,
+    "AccumulatedMonths" integer NOT NULL DEFAULT 0,
+    "UpdatedAt" timestamp with time zone NOT NULL,
+    
+    CONSTRAINT "PK_player_subscriptions" PRIMARY KEY ("Id"),
+    CONSTRAINT "FK_player_subscriptions_players_PlayerId" FOREIGN KEY ("PlayerId") REFERENCES players ("Id") ON DELETE CASCADE
+);
+CREATE UNIQUE INDEX "IX_player_subscriptions_PlayerId" ON player_subscriptions ("PlayerId");
+CREATE INDEX "IX_player_subscriptions_StripeSubscriptionId" ON player_subscriptions ("StripeSubscriptionId");

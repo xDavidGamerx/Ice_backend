@@ -102,10 +102,10 @@ Aquí se consolidan y detallan las tareas pendientes del proyecto (incluyendo ne
     - **Archivos afectados**: `src/IceBackend.Domain/Entities/*`
     - **Descripción**: Se encapsuló todo el estado mutable (`private set`) y se requiere uso de métodos expresivos o constructores para proteger las invariantes del dominio.
 
-13. - [ ] **Sistema de Rangos: Definir modelo de datos técnico y beneficios**
+13. - [x] **Suscripción ICE+: Definir modelo de datos técnico y beneficios**
      - **Prioridad**: Media-Baja
-     - **Archivos afectados**: `src/IceBackend.Domain/Entities/PlayerRange.cs`, `src/IceBackend.Infrastructure/Data/ApplicationDbContext.cs`, `docs/database.sql`
-     - **Descripción**: Diseñar e implementar el modelo de datos de rangos, la relación relacional con los jugadores, y la lógica en memoria en Redis para cachear los beneficios activos del rango del jugador.
+     - **Archivos afectados**: `src/IceBackend.Domain/Entities/PlayerSubscription.cs`, `src/IceBackend.Infrastructure/Data/ApplicationDbContext.cs`, `docs/database.sql`
+     - **Descripción**: Diseñar e implementar el modelo de datos para la suscripción ICE+ (estilo Lunar+), registrando el estado activo, expiración, renovación y un contador acumulativo de meses para los iconos evolutivos, persistiendo los beneficios y cargándolos en caché (Redis) mediante Cache-Aside.
 
 14. - [ ] **Configurar CORS (Cross-Origin Resource Sharing)**
      - **Prioridad**: Media

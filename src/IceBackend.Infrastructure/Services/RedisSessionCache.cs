@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using IceBackend.Application.Interfaces;
 using IceBackend.Infrastructure.Data;
@@ -24,11 +25,14 @@ namespace IceBackend.Infrastructure.Services
         private const string DevTokenPrefix = "dev_session:token:";
         private const string InventoryPrefix = "inventory:player:";
         private const string HashMappingPrefix = "asset:hash:";
+        private const string SubscriptionPrefix = "subscription:player:";
         
         // TTL para el inventario en caché (1 hora por defecto, se refresca con actividad)
         private readonly TimeSpan _inventoryTtl = TimeSpan.FromHours(1);
         // TTL para mapeo de hashes (24 horas, es casi inmutable)
         private readonly TimeSpan _hashMappingTtl = TimeSpan.FromDays(1);
+        // TTL para la suscripción en caché (1 hora)
+        private readonly TimeSpan _subscriptionTtl = TimeSpan.FromHours(1);
 
         private readonly IDistributedCache _cache;
         private readonly IConnectionMultiplexer _redis;
@@ -94,7 +98,9 @@ namespace IceBackend.Infrastructure.Services
             // Limpiar sesión de desarrollo si existe
             await RemoveDevSessionAsync(playerId);
 
-            await InvalidatePlayerCosmeticsAsync(Guid.Parse(playerId));
+            var playerGuid = Guid.Parse(playerId);
+            await InvalidatePlayerCosmeticsAsync(playerGuid);
+            await InvalidatePlayerSubscriptionAsync(playerGuid);
         }
 
         public async Task<string?> GetPlayerIdBySessionAsync(string sessionToken)
@@ -206,6 +212,64 @@ namespace IceBackend.Infrastructure.Services
                 keys = new RedisKey[] { sessionsIndexKey },
                 values = new RedisValue[] { nowUnix, TokenPrefix }
             });
+
+            await InvalidatePlayerSubscriptionAsync(playerId);
+        }
+
+        public async Task<IceBackend.Domain.Services.IcePlusBenefits?> GetIcePlusBenefitsAsync(Guid playerId)
+        {
+            var db = _redis.GetDatabase();
+            var key = $"{SubscriptionPrefix}{playerId}";
+
+            // 1. Intentar GET en Redis
+            var cachedValue = await db.StringGetAsync(key);
+            if (cachedValue.HasValue)
+            {
+                if (cachedValue == "NONE") return null;
+                try
+                {
+                    return JsonSerializer.Deserialize<IceBackend.Domain.Services.IcePlusBenefits>(cachedValue!);
+                }
+                catch
+                {
+                    // Ante cualquier error de deserialización, ignorar caché y rehidratar
+                }
+            }
+
+            // 2. Cache Miss: Rehidratar desde PostgreSQL (Cache-Aside)
+            var subscription = await _dbContext.PlayerSubscriptions
+                .FirstOrDefaultAsync(s => s.PlayerId.Value == playerId);
+
+            if (subscription == null || !subscription.IsActive || (subscription.ExpiresAt.HasValue && subscription.ExpiresAt.Value < DateTime.UtcNow))
+            {
+                // Cache Penetration Protection: Guardar "NONE" con TTL corto
+                await db.StringSetAsync(key, "NONE", TimeSpan.FromMinutes(5));
+                return null;
+            }
+
+            // Obtener los beneficios y serializarlos
+            var benefits = IceBackend.Domain.Services.IcePlusBenefitsProvider.GetBenefits(subscription.AccumulatedMonths);
+            var serialized = JsonSerializer.Serialize(benefits);
+
+            // Calcular TTL óptimo (el tiempo restante de la suscripción, limitado al TTL máximo de caché)
+            var ttl = _subscriptionTtl;
+            if (subscription.ExpiresAt.HasValue)
+            {
+                var remaining = subscription.ExpiresAt.Value - DateTime.UtcNow;
+                if (remaining < ttl)
+                {
+                    ttl = remaining > TimeSpan.Zero ? remaining : TimeSpan.FromSeconds(5);
+                }
+            }
+
+            await db.StringSetAsync(key, serialized, ttl);
+            return benefits;
+        }
+
+        public async Task InvalidatePlayerSubscriptionAsync(Guid playerId)
+        {
+            var db = _redis.GetDatabase();
+            await db.KeyDeleteAsync($"{SubscriptionPrefix}{playerId}");
         }
 
         private static string BuildKey(string playerId) => $"{KeyPrefix}{playerId}";

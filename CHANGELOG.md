@@ -2,6 +2,28 @@
 
 Este archivo registra las modificaciones importantes, correcciones de errores y nuevas funcionalidades implementadas en el proyecto, junto con su justificación técnica.
 
+## [2026-05-22] - Suscripción ICE+: Modelo de Datos, Beneficios y Caché
+
+### Añadido
+- **Entidad `PlayerSubscription`**: Nueva entidad de dominio (`src/IceBackend.Domain/Entities/PlayerSubscription.cs`) que representa la suscripción premium ICE+ de un jugador. Almacena: estado activo, fecha de expiración, ID de suscripción Stripe, renovación automática, meses acumulados y marca de auditoría.
+- **`IcePlusBenefitsProvider`**: Proveedor de dominio estático (`src/IceBackend.Domain/Services/IcePlusBenefitsProvider.cs`) que calcula los beneficios activos de ICE+ (prefijo `[ICE+]`, física de capas, sin anuncios, amigos ilimitados, 10% descuento automático en tienda) y resuelve las 15 variantes de color del icono evolutivo según los meses acumulados.
+- **`PlayerSubscriptionConfiguration`**: Configuración de EF Core para la tabla `player_subscriptions` con relación 1-a-1 a `Player` y cascada en eliminación.
+- **Métodos ICE+ en `Player`**: `AssignIcePlusSubscription`, `IncrementIcePlusMonths` y `CancelIcePlusSubscription` como métodos expresivos de dominio.
+- **Caché de Suscripción en Redis**: Métodos `GetIcePlusBenefitsAsync` e `InvalidatePlayerSubscriptionAsync` en `ISessionCache`/`RedisSessionCache` con patrón Cache-Aside y protección contra Cache Penetration (clave `subscription:player:{id}`).
+- **Tests unitarios `PlayerSubscriptionTests`**: 13 nuevos tests cubriendo activación, cancelación, acumulación de meses e icono evolutivo. Suite total: **40/40 tests superados**.
+
+### Cambiado
+- **`Player.cs`**: Eliminadas las propiedades obsoletas `ActiveRange` y `RangeExpiresAt` (desnormalización de rangos). Añadida la navegación `Subscription` 1-a-1 a `PlayerSubscription` y campo `RequiresSessionSync` mantenido.
+- **`PlayerConfiguration.cs`**: Eliminado el mapeo de columnas obsoletas `active_range` y `range_expires_at`. Agregada la relación 1-a-1 con `PlayerSubscription`.
+- **`ApplicationDbContext.cs`**: Registrado `DbSet<PlayerSubscription>`.
+- **`StripeWebhookService.cs`**: `HandleInvoicePaidAsync` ahora activa la suscripción ICE+ e incrementa meses acumulados según `billing_reason`. `HandleInvoicePaymentFailedAsync` cancela la suscripción inmediatamente. `HandleSubscriptionDeletedAsync` cancela la suscripción y purga sesión, suscripción e inventario de Redis.
+- **`RemoveSessionAsync` y `PurgePlayerSessionsAsync`**: Ahora también invalidan la clave de caché de suscripción del jugador.
+- **`database.sql`**: Eliminadas columnas `active_range` y `range_expires_at` de la tabla `players`. Añadida la creación de la tabla `player_subscriptions` con índices único en `PlayerId` e índice en `StripeSubscriptionId`.
+
+### Técnico
+- Contexto de negocio (`ContextSkill.md`) y contexto técnico (`TechnicalContextSkill.md`) actualizados para reflejar el modelo ICE+ (estilo Lunar+) con sus beneficios, reglas de acumulación de meses y lógica de caché Redis.
+- `TASKS.md`: Tarea 13 marcada como completada.
+
 ## [2026-05-22] - Endpoint DevLogin, Middleware de Errores, Refactor de Hashing y Reestructuración de Wearables/Idempotencia
 
 ### Añadido
