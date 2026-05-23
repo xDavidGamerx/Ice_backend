@@ -2,6 +2,22 @@
 
 Este archivo registra las modificaciones importantes, correcciones de errores y nuevas funcionalidades implementadas en el proyecto, junto con su justificación técnica.
 
+## [2026-05-23] - Transaccionalidad de Webhooks, Mitigación de Caché (Task 15) y Logs (Task 10)
+
+### Añadido
+- **Serilog (`Task 10`)**: Configuración completa de *Serilog* sustituyendo al logger por defecto. Logs estructurados JSON (`CompactJsonFormatter`) con fail-fast environment. Redireccionamiento del sink `File` exclusivo al `appsettings.Development.json` para proteger contenedores de producción de I/O bloqueante.
+
+### Cambiado
+- **Mitigación de *Cache Penetration* (`Task 15`)**: Modificado `RedisSessionCache.cs` reduciendo el TTL del caché nulo de 5 minutos a 30 segundos como *Circuit-Breaker*.
+- **Integridad Semántica de Sets (Redis)**: Se reemplazó el centinela en texto plano (`"NONE"`) por una llave auxiliar de bloqueo (`inventory:player:{id}:empty_flag`). Evaluada de forma concurrente mediante un pipeline `Task.WhenAll` sin $O(1)$ adicional.
+- **Transaccionalidad en Mutaciones**: En `EquipCosmeticUseCase` y `UnequipCosmeticUseCase`, la purga reactiva de caché fue removida del bloque `catch` inerte y amarrada de manera síncrona post-éxito del `SaveChangesAsync()`.
+- **Transaccionalidad en Webhooks (Stripe)**: Removida la purga asíncrona dentro de los handlers y del bloque `finally` ciego en `StripeWebhookService`. Ahora recolecta *PlayerIds* concurrentemente (`ConcurrentBag<Guid>`) y los purga en iteración **sólo si** el pipeline principal confirma el `.CommitAsync()` hacia PostgreSQL exitosamente.
+
+### Técnico
+- Reescritura del bootstrap en `Program.cs` para inmutabilidad del cargador de entorno `.env` atado a `ASPNETCORE_ENVIRONMENT == "Development"`.
+- `TASKS.md`: Marcadas Tarea 10 y Tarea 15 como completadas.
+- `dotnet test`: 40/40 pruebas certificadas.
+
 ## [2026-05-22] - Suscripción ICE+: Modelo de Datos, Beneficios y Caché
 
 ### Añadido

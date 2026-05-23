@@ -118,11 +118,22 @@ namespace IceBackend.Infrastructure.Services
         {
             var db = _redis.GetDatabase();
             var key = $"{InventoryPrefix}{playerId}";
+            var emptyFlagKey = $"{InventoryPrefix}{playerId}:empty_flag";
 
-            // 1. Intentar SISMEMBER en Redis
-            if (await db.KeyExistsAsync(key))
+            // 1. Pipeline asíncrono para consultar Set principal y Flag simultáneamente
+            var keyExistsTask = db.KeyExistsAsync(key);
+            var emptyFlagExistsTask = db.KeyExistsAsync(emptyFlagKey);
+
+            await Task.WhenAll(keyExistsTask, emptyFlagExistsTask);
+
+            if (keyExistsTask.Result)
             {
                 return await db.SetContainsAsync(key, cosmeticId.ToString());
+            }
+
+            if (emptyFlagExistsTask.Result)
+            {
+                return false; // Sabemos con certeza que no tiene nada
             }
 
             // 2. Cache Miss: Hidratar desde PostgreSQL (Pattern: Cache-Aside)
@@ -141,10 +152,8 @@ namespace IceBackend.Infrastructure.Services
             }
             else
             {
-                // Para evitar "Cache Penetration" con IDs inexistentes, 
-                // guardamos un set vacío con TTL corto si no tiene nada.
-                await db.SetAddAsync(key, "NONE"); 
-                await db.KeyExpireAsync(key, TimeSpan.FromMinutes(5));
+                // Mitigar Cache Penetration sin ensuciar el Set
+                await db.StringSetAsync(emptyFlagKey, "1", TimeSpan.FromSeconds(30));
             }
 
             return ownedIdStrings.Contains(cosmeticId.ToString());
@@ -153,7 +162,9 @@ namespace IceBackend.Infrastructure.Services
         public async Task InvalidatePlayerCosmeticsAsync(Guid playerId)
         {
             var db = _redis.GetDatabase();
-            await db.KeyDeleteAsync($"{InventoryPrefix}{playerId}");
+            var key = $"{InventoryPrefix}{playerId}";
+            var emptyFlagKey = $"{InventoryPrefix}{playerId}:empty_flag";
+            await db.KeyDeleteAsync(new RedisKey[] { key, emptyFlagKey });
         }
 
         public async Task<Guid?> GetCosmeticIdByHashAsync(string hash)
@@ -225,7 +236,7 @@ namespace IceBackend.Infrastructure.Services
             var cachedValue = await db.StringGetAsync(key);
             if (cachedValue.HasValue)
             {
-                if (cachedValue == "NONE") return null;
+                if (cachedValue == "{\"IsNull\":true}") return null;
                 try
                 {
                     return JsonSerializer.Deserialize<IceBackend.Domain.Services.IcePlusBenefits>(cachedValue!);
@@ -242,8 +253,8 @@ namespace IceBackend.Infrastructure.Services
 
             if (subscription == null || !subscription.IsActive || (subscription.ExpiresAt.HasValue && subscription.ExpiresAt.Value < DateTime.UtcNow))
             {
-                // Cache Penetration Protection: Guardar "NONE" con TTL corto
-                await db.StringSetAsync(key, "NONE", TimeSpan.FromMinutes(5));
+                // Cache Penetration Protection: Guardar JSON con TTL corto
+                await db.StringSetAsync(key, "{\"IsNull\":true}", TimeSpan.FromSeconds(30));
                 return null;
             }
 

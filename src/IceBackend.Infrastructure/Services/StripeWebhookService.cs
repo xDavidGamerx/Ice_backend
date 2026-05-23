@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 using IceBackend.Application.DTOs;
 using IceBackend.Application.Interfaces;
@@ -56,6 +57,7 @@ namespace IceBackend.Infrastructure.Services
             await _sessionCache.SetSessionAsync(idempotencyKey, "1", IdempotencyTtl);
 
             // ── 2ª BARRERA + LÓGICA DE NEGOCIO: EF Core Transaction ───────────────
+            var affectedPlayers = new ConcurrentBag<Guid>();
             await using var transaction = await _dbContext.Database.BeginTransactionAsync();
             try
             {
@@ -72,12 +74,20 @@ namespace IceBackend.Infrastructure.Services
                     return false;
                 }
 
-                // Procesar el evento según su tipo.
-                await DispatchEventAsync(webhookEvent);
+                // Procesar el evento según su tipo y recolectar IDs mutados.
+                await DispatchEventAsync(webhookEvent, affectedPlayers);
 
                 // Confirmar la transacción solo si el dispatch fue exitoso.
                 await transaction.CommitAsync();
                 _logger.LogInformation("Webhook processed successfully. EventId: {EventId}, Type: {Type}", webhookEvent.EventId, webhookEvent.EventType);
+                
+                // Purga reactiva condicionada exclusivamente al COMMIT exitoso
+                foreach (var playerId in affectedPlayers.Distinct())
+                {
+                    await _sessionCache.InvalidatePlayerSubscriptionAsync(playerId);
+                    await _sessionCache.InvalidatePlayerCosmeticsAsync(playerId);
+                }
+
                 return true;
             }
             catch (Exception ex)
@@ -92,18 +102,18 @@ namespace IceBackend.Infrastructure.Services
 
         // ── DISPATCHER DE EVENTOS ─────────────────────────────────────────────────
 
-        private async Task DispatchEventAsync(WebhookEventDto webhookEvent)
+        private async Task DispatchEventAsync(WebhookEventDto webhookEvent, ConcurrentBag<Guid> affectedPlayers)
         {
             switch (webhookEvent.EventType)
             {
                 case InvoicePaid:
-                    await HandleInvoicePaidAsync(webhookEvent);
+                    await HandleInvoicePaidAsync(webhookEvent, affectedPlayers);
                     break;
                 case InvoicePaymentFailed:
-                    await HandleInvoicePaymentFailedAsync(webhookEvent);
+                    await HandleInvoicePaymentFailedAsync(webhookEvent, affectedPlayers);
                     break;
                 case SubscriptionDeleted:
-                    await HandleSubscriptionDeletedAsync(webhookEvent);
+                    await HandleSubscriptionDeletedAsync(webhookEvent, affectedPlayers);
                     break;
                 default:
                     // Evento no manejado: lo registramos pero sin lógica de negocio.
@@ -115,7 +125,7 @@ namespace IceBackend.Infrastructure.Services
 
         // ── HANDLERS ESPECÍFICOS ──────────────────────────────────────────────────
 
-        private async Task HandleInvoicePaidAsync(WebhookEventDto webhookEvent)
+        private async Task HandleInvoicePaidAsync(WebhookEventDto webhookEvent, ConcurrentBag<Guid> affectedPlayers)
         {
             var customerId = ExtractStripeCustomerId(webhookEvent.DataObjectJson);
             var player = await FindPlayerByStripeCustomerIdAsync(customerId);
@@ -145,14 +155,13 @@ namespace IceBackend.Infrastructure.Services
 
             await _dbContext.SaveChangesAsync();
 
-            // Purga de caché para reflejar la suscripción y cosméticos adquiridos
-            await _sessionCache.InvalidatePlayerSubscriptionAsync(player.Id);
-            await _sessionCache.InvalidatePlayerCosmeticsAsync(player.Id);
+            // Registrar ID afectado para la purga post-commit
+            affectedPlayers.Add(player.Id);
             
-            _logger.LogInformation("Invoice paid processed and cache invalidated for PlayerId: {PlayerId}", player.Id);
+            _logger.LogInformation("Invoice paid processed and player scheduled for cache invalidation: {PlayerId}", player.Id);
         }
 
-        private async Task HandleInvoicePaymentFailedAsync(WebhookEventDto webhookEvent)
+        private async Task HandleInvoicePaymentFailedAsync(WebhookEventDto webhookEvent, ConcurrentBag<Guid> affectedPlayers)
         {
             var customerId = ExtractStripeCustomerId(webhookEvent.DataObjectJson);
             var player = await FindPlayerByStripeCustomerIdAsync(customerId);
@@ -170,14 +179,13 @@ namespace IceBackend.Infrastructure.Services
             player.CancelIcePlusSubscription(DateTime.UtcNow);
             await _dbContext.SaveChangesAsync();
 
-            // Invalidar caché ante fallo de pago para revocar accesos temporales
-            await _sessionCache.InvalidatePlayerSubscriptionAsync(player.Id);
-            await _sessionCache.InvalidatePlayerCosmeticsAsync(player.Id);
+            // Registrar ID afectado para la purga post-commit
+            affectedPlayers.Add(player.Id);
             
-            _logger.LogWarning("Payment failed for PlayerId: {PlayerId}. Inventory and subscription cache invalidated.", player.Id);
+            _logger.LogWarning("Payment failed for PlayerId: {PlayerId}. Scheduled cache invalidation.", player.Id);
         }
 
-        private async Task HandleSubscriptionDeletedAsync(WebhookEventDto webhookEvent)
+        private async Task HandleSubscriptionDeletedAsync(WebhookEventDto webhookEvent, ConcurrentBag<Guid> affectedPlayers)
         {
             var customerId = ExtractStripeCustomerId(webhookEvent.DataObjectJson);
             var player = await FindPlayerByStripeCustomerIdAsync(customerId);
@@ -195,12 +203,13 @@ namespace IceBackend.Infrastructure.Services
             player.CancelIcePlusSubscription(DateTime.UtcNow);
             await _dbContext.SaveChangesAsync();
 
-            // Purga completa de sesión, suscripción e inventario en Redis
+            // Remover sesión física de inmediato (es un logout forzoso opcional, mantengo tu lógica)
             await _sessionCache.RemoveSessionAsync(player.Id.ToString());
-            await _sessionCache.InvalidatePlayerSubscriptionAsync(player.Id);
-            await _sessionCache.InvalidatePlayerCosmeticsAsync(player.Id);
+
+            // Registrar ID afectado para la purga post-commit
+            affectedPlayers.Add(player.Id);
             
-            _logger.LogInformation("Session, subscription and inventory purged for PlayerId: {PlayerId} due to subscription cancellation.", player.Id);
+            _logger.LogInformation("Subscription cancelled for PlayerId: {PlayerId}. Scheduled cache invalidation.", player.Id);
         }
 
         // ── HELPERS ───────────────────────────────────────────────────────────────

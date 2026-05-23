@@ -112,7 +112,7 @@ Aquí se consolidan y detallan las tareas pendientes del proyecto (incluyendo ne
      - **Archivos afectados**: `src/IceBackend.Api/Program.cs`, `appsettings.json`
      - **Descripción**: Registrar y configurar políticas de CORS en el pipeline de ASP.NET Core que permitan al launcher (origen del cliente Electron) consumir la API, y a `localhost` para desarrollo. Debe ser restrictivo: solo orígenes explícitamente listados, sin permitir `AllowAnyOrigin()` en producción.
 
-15. - [ ] **Mitigación de Cache Penetration (Short-lived Null Cache Items)**
+15. - [x] **Mitigación de Cache Penetration (Short-lived Null Cache Items)**
      - **Prioridad**: Alta
      - **Archivos afectados**: `src/IceBackend.Infrastructure/Services/RedisSessionCache.cs`
      - **Descripción**: Modificar la estrategia de Cache-Aside de suscripciones ICE+ para almacenar explícitamente valores nulos con expiración corta cuando la consulta a PostgreSQL no arroje resultados, evitando que consultas a IDs inexistentes degraden la base de datos.

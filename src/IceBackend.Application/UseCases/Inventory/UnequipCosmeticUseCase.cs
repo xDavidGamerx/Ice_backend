@@ -32,15 +32,10 @@ namespace IceBackend.Application.UseCases.Inventory
 
             player.Unequip(slot);
 
-            try
-            {
-                await _repo.SaveChangesAsync();
-            }
-            catch
-            {
-                await _cache.InvalidatePlayerCosmeticsAsync(playerId);
-                throw;
-            }
+            await _repo.SaveChangesAsync();
+
+            // Purga post-commit garantizada
+            await _cache.InvalidatePlayerCosmeticsAsync(playerId);
 
             return true;
         }

@@ -7,6 +7,30 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Serilog;
 
+// 1. Cargar archivo .env local solo en Development ANTES del Bootstrap Logger
+var isDevelopment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+if (isDevelopment || string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")))
+{
+    var envPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", ".env");
+    if (!File.Exists(envPath)) 
+    {
+        envPath = Path.Combine(Directory.GetCurrentDirectory(), ".env"); // Fallback
+    }
+
+    if (File.Exists(envPath))
+    {
+        foreach (var line in File.ReadAllLines(envPath))
+        {
+            if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#")) continue;
+            var parts = line.Split('=', 2);
+            if (parts.Length == 2)
+            {
+                Environment.SetEnvironmentVariable(parts[0].Trim(), parts[1].Trim());
+            }
+        }
+    }
+}
+
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console(new Serilog.Formatting.Compact.CompactJsonFormatter())
     .CreateBootstrapLogger();
@@ -15,27 +39,7 @@ try
 {
     Log.Information("Iniciando ICE Backend API...");
 
-    // 1. Cargar archivo .env local para desarrollo
-    var envPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", ".env");
-if (!File.Exists(envPath)) 
-{
-    envPath = Path.Combine(Directory.GetCurrentDirectory(), ".env"); // Fallback
-}
-
-if (File.Exists(envPath))
-{
-    foreach (var line in File.ReadAllLines(envPath))
-    {
-        if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#")) continue;
-        var parts = line.Split('=', 2);
-        if (parts.Length == 2)
-        {
-            Environment.SetEnvironmentVariable(parts[0].Trim(), parts[1].Trim());
-        }
-    }
-}
-
-var builder = WebApplication.CreateBuilder(args);
+    var builder = WebApplication.CreateBuilder(args);
     builder.Configuration.AddEnvironmentVariables(); // Ensure env vars override appsettings
 
     builder.Host.UseSerilog((context, services, configuration) => configuration

@@ -78,16 +78,11 @@ namespace IceBackend.Application.UseCases.Inventory
                 return EquipResult.ArchitectureIncompatible;
             }
 
-            // 8. Persistir con protección transaccional
-            try
-            {
-                await _repo.SaveChangesAsync();
-            }
-            catch
-            {
-                await _cache.InvalidatePlayerCosmeticsAsync(playerId);
-                throw;
-            }
+            // 8. Persistir en DB
+            await _repo.SaveChangesAsync();
+
+            // 9. Purga post-commit garantizada
+            await _cache.InvalidatePlayerCosmeticsAsync(playerId);
 
             return EquipResult.Success;
         }
