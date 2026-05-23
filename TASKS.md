@@ -32,6 +32,16 @@ Este documento contiene la lista de tareas del proyecto, estructurada para optim
 
 Aquí se consolidan y detallan las tareas pendientes del proyecto (incluyendo negocio, calidad y deuda técnica del Informe Kevin) ordenadas por prioridad de ejecución recomendada:
 
+0. - [x] **Refactorizar dominio de Jugador e infraestructura de Wearables**
+   - **Prioridad**: Crítica (Bloqueante de Producción)
+   - **Archivos afectados**: `src/IceBackend.Domain/Entities/Player.cs`, `src/IceBackend.Domain/Entities/PlayerId.cs`, `src/IceBackend.Infrastructure/Data/Configurations/PlayerConfiguration.cs`, `src/IceBackend.Application/UseCases/Inventory/EquipCosmeticUseCase.cs`, `docs/database.sql`
+   - **Descripción**: Rediseñar la identidad del jugador con `PlayerId` posicional inmutable, remover `SessionHash` para aislar las sesiones en Redis volátil, y mover ranuras de cosméticos equipados a columnas directas `int?` (Nullable Integers) en la tabla `players`, validando en el dominio la compatibilidad del cliente (`UuidType` y `AssetArchitecture`).
+
+0.5. - [x] **Implementar Webhook Idempotente de Stripe (`invoice.paid`) con Activación de Rangos y Purga de Sesiones**
+     - **Prioridad**: Alta (Bloqueante de Integración)
+     - **Archivos afectados**: `src/IceBackend.Infrastructure/Services/StripeWebhookService.cs`, `src/IceBackend.Domain/Entities/Player.cs`, `src/IceBackend.Application/Interfaces/ISessionCache.cs`, `src/IceBackend.Infrastructure/Services/RedisSessionCache.cs`
+     - **Descripción**: Procesar el evento `invoice.paid` de Stripe para extraer la metadata del rango, persistir el rango activo en PostgreSQL, y purgar de manera atómica las sesiones activas del jugador en Redis usando transacciones (`MULTI/EXEC`) para forzar la recarga inmediata de privilegios en el Launcher.
+
 1. - [x] **Extraer secretos y configurar variables de entorno**
    - **Prioridad**: Alta
    - **Archivos afectados**: `appsettings.json`, `.gitignore`, `docs/local-runbook.md`, [NEW] `.env.example`

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using IceBackend.Application.Interfaces;
 using IceBackend.Domain.Entities;
@@ -18,9 +19,9 @@ namespace IceBackend.Infrastructure.Repositories
 
         public async Task<Player?> GetPlayerWithCosmeticsAsync(Guid playerId)
         {
+            // Ya no se requiere .Include(p => p.EquippedCosmetics) porque los wearables son columnas directas
             return await _dbContext.Players
-                .Include(p => p.EquippedCosmetics)
-                .FirstOrDefaultAsync(p => p.Id == playerId);
+                .FirstOrDefaultAsync(p => p.Id.Value == playerId);
         }
 
         public async Task<CosmeticAsset?> GetCosmeticWithVersionsAsync(Guid cosmeticId)
@@ -28,13 +29,13 @@ namespace IceBackend.Infrastructure.Repositories
             return await _dbContext.CosmeticAssets
                 .AsNoTracking()
                 .Include(c => c.Versions)
-                .FirstOrDefaultAsync(c => c.Id == cosmeticId);
+                .FirstOrDefaultAsync(c => c.Id.Value == cosmeticId);
         }
 
         public async Task<bool> PlayerOwnsCosmeticAsync(Guid playerId, Guid cosmeticId)
         {
             return await _dbContext.PlayerCosmeticOwnerships
-                .AnyAsync(o => o.PlayerId == playerId && o.CosmeticId == cosmeticId);
+                .AnyAsync(o => o.PlayerId.Value == playerId && o.Cosmetic.Id == new CosmeticId(cosmeticId));
         }
 
         public Task SaveChangesAsync() => _dbContext.SaveChangesAsync();

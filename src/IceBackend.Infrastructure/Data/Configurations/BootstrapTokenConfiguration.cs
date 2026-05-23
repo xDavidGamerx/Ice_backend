@@ -13,6 +13,7 @@ namespace IceBackend.Infrastructure.Data.Configurations
             builder.HasKey(e => e.TokenHash);
 
             builder.Property(e => e.PlayerId)
+                   .HasConversion(id => id.Value, value => new PlayerId(value))
                    .HasColumnType("uuid");
 
             builder.HasOne(e => e.Player)

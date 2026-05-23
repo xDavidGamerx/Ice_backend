@@ -15,7 +15,6 @@ namespace IceBackend.Infrastructure.Data
         public DbSet<BootstrapToken> BootstrapTokens { get; set; } = null!;
         public DbSet<CosmeticAsset> CosmeticAssets { get; set; } = null!;
         public DbSet<CosmeticAssetVersion> CosmeticAssetVersions { get; set; } = null!;
-        public DbSet<PlayerCosmetic> PlayerCosmetics { get; set; } = null!;
         public DbSet<PlayerCosmeticOwnership> PlayerCosmeticOwnerships { get; set; } = null!;
         public DbSet<PaymentEvent> PaymentEvents { get; set; } = null!;
         public DbSet<UnresolvedPaymentEvent> UnresolvedPaymentEvents { get; set; } = null!;

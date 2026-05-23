@@ -56,5 +56,10 @@ namespace IceBackend.Application.Interfaces
         /// Remueve una sesión de desarrollo y sus claves inversas en Redis.
         /// </summary>
         Task RemoveDevSessionAsync(string playerId);
+
+        /// <summary>
+        /// Purgado atómico de todas las sesiones de un jugador en Redis (ZSET autolimpiable con script Lua).
+        /// </summary>
+        Task PurgePlayerSessionsAsync(Guid playerId);
     }
 }

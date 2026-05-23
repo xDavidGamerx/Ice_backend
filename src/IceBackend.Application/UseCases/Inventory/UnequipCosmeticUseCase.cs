@@ -30,7 +30,7 @@ namespace IceBackend.Application.UseCases.Inventory
             if (player == null)
                 return false;
 
-            player.UnequipCosmetic(slot);
+            player.Unequip(slot);
 
             try
             {

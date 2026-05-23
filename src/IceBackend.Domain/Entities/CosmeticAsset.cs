@@ -6,7 +6,12 @@ namespace IceBackend.Domain.Entities
 {
     public class CosmeticAsset
     {
-        public Guid Id { get; private set; }
+        // 1. Clave subrogada de base de datos para optimización de almacenamiento relacional e indexación física
+        public int InternalId { get; private set; }
+
+        // 2. Clave pública de dominio (no enumerable) para API/Launcher (UUID)
+        public CosmeticId Id { get; private set; } = null!;
+
         public CosmeticType CosmeticType { get; private set; }
         public string DisplayName { get; private set; } = null!;
         public int AssetVersion { get; private set; }
@@ -20,26 +25,18 @@ namespace IceBackend.Domain.Entities
 
         private CosmeticAsset() { }
 
-        public CosmeticAsset(Guid id, CosmeticType type, string displayName)
+        public CosmeticAsset(CosmeticId id, CosmeticType type, string displayName)
         {
-            if (id == Guid.Empty) throw new ArgumentException("ID cannot be empty.", nameof(id));
-            if (string.IsNullOrWhiteSpace(displayName)) throw new ArgumentException("Display name cannot be empty.", nameof(displayName));
-
-            Id = id;
+            Id = id ?? throw new ArgumentNullException(nameof(id));
             CosmeticType = type;
-            DisplayName = displayName;
+            DisplayName = !string.IsNullOrWhiteSpace(displayName) 
+                ? displayName 
+                : throw new ArgumentException("El nombre del cosmético no puede estar vacío.", nameof(displayName));
             AssetVersion = 1;
             CreatedAt = DateTime.UtcNow;
         }
 
-        public void IncrementVersion()
-        {
-            AssetVersion++;
-        }
-
-        public void AddVersion(CosmeticAssetVersion version)
-        {
-            _versions.Add(version);
-        }
+        public void IncrementVersion() => AssetVersion++;
+        public void AddVersion(CosmeticAssetVersion version) => _versions.Add(version);
     }
 }

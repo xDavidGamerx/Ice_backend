@@ -10,10 +10,20 @@ namespace IceBackend.Infrastructure.Data.Configurations
         {
             builder.ToTable("cosmetic_assets");
 
-            builder.HasKey(e => e.Id);
+            // Clave primaria subrogada de base de datos (secuencial interno)
+            builder.HasKey(e => e.InternalId);
+            builder.Property(e => e.InternalId)
+                   .HasColumnName("internal_id")
+                   .ValueGeneratedOnAdd();
 
+            // Clave de dominio no enumerable (UUID) expuesta al exterior
             builder.Property(e => e.Id)
-                   .HasColumnType("uuid");
+                   .HasConversion(id => id.Value, value => new CosmeticId(value))
+                   .HasColumnName("id")
+                   .HasColumnType("uuid")
+                   .IsRequired();
+
+            builder.HasIndex(e => e.Id).IsUnique();
 
             builder.Property(e => e.CosmeticType)
                    .HasConversion<string>()
@@ -29,11 +39,10 @@ namespace IceBackend.Infrastructure.Data.Configurations
             builder.Property(e => e.CreatedAt)
                    .IsRequired();
 
-            // Las versiones binarias (CAS) se configuran en CosmeticAssetVersionConfiguration.
-            // La relación inversa se declara aquí para completitud del grafo de navegación.
+            // Relación con las versiones de assets apuntando al InternalId
             builder.HasMany(e => e.Versions)
                    .WithOne(v => v.CosmeticAsset)
-                   .HasForeignKey(v => v.CosmeticAssetId)
+                   .HasForeignKey(v => v.CosmeticAssetInternalId)
                    .OnDelete(DeleteBehavior.Cascade);
         }
     }

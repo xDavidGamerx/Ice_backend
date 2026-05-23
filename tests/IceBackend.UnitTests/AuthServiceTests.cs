@@ -72,7 +72,7 @@ namespace IceBackend.UnitTests
 
             var player = await sut.RegisterIceAccountAsync("testuser", "Password123!");
 
-            Assert.NotEqual(Guid.Empty, player.Id);
+            Assert.NotEqual(Guid.Empty, player.Id.Value);
             Assert.Equal("testuser", player.Username);
             Assert.Equal(UuidType.ICE, player.UuidType);
 
@@ -81,16 +81,19 @@ namespace IceBackend.UnitTests
         }
 
         [Fact]
-        public async Task RegisterIceAccountAsync_ShouldInitializeCosmeticSlots()
+        public async Task RegisterIceAccountAsync_ShouldInitializeCosmeticSlotsToNull()
         {
             using var context = GetInMemoryDbContext();
             var sut = BuildAuthService(context);
-            int expectedSlotCount = Enum.GetValues(typeof(CosmeticType)).Length;
-
+ 
             var player = await sut.RegisterIceAccountAsync("user1", "pass1");
-
-            Assert.Equal(expectedSlotCount, player.EquippedCosmetics.Count);
-            Assert.All(player.EquippedCosmetics, c => Assert.Null(c.CosmeticId));
+ 
+            Assert.Null(player.EquippedHatId);
+            Assert.Null(player.EquippedWingId);
+            Assert.Null(player.EquippedCapeId);
+            Assert.Null(player.EquippedShirtId);
+            Assert.Null(player.EquippedPantsId);
+            Assert.Null(player.EquippedShoesId);
         }
 
         [Fact]

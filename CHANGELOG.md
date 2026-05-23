@@ -2,7 +2,7 @@
 
 Este archivo registra las modificaciones importantes, correcciones de errores y nuevas funcionalidades implementadas en el proyecto, junto con su justificación técnica.
 
-## [2026-05-22] - Endpoint DevLogin, Middleware de Errores y Refactor de Hashing
+## [2026-05-22] - Endpoint DevLogin, Middleware de Errores, Refactor de Hashing y Reestructuración de Wearables/Idempotencia
 
 ### Añadido
 - **Endpoint DevLogin (`POST /api/v1/dev/login`)**: Controlador `DevAuthController` exclusivo para desarrollo local. Protegido con triple barrera: guardia de entorno (`Development`), token maestro (`DEV_MASTER_TOKEN`) con fail-fast en constructor, y oculto de Swagger.
@@ -15,17 +15,33 @@ Este archivo registra las modificaciones importantes, correcciones de errores y 
 - **Validación al Inicio (`ValidateOnStart`)**: Rango de `BcryptWorkFactor` (4-15) validado al arrancar.
 - **Variables de Entorno**: `Auth__BcryptWorkFactor` y `Auth__LegacySalt` eliminando secretos de `appsettings.json`.
 - **Pruebas de Middleware**: `ExceptionHandlingMiddlewareTests.cs` con 2 tests de mapeo 400/403 y redacción de trazas.
+- **Value Objects de Dominio (`PlayerId` y `CosmeticId`)**: Records posicionales inmutables y fuertemente tipados que erradican la obsesión por los primitivos.
+- **Tokens Criptográficos de Dominio**: `ValidatedEquipmentToken` y `ValidatedRangeAssignmentToken` inmutables y firmados simétricamente con HMAC-SHA256 con control de expiración.
+- **Interfaces de Criptografía de Dominio**: `ICosmeticTokenSigner` e `IRangeTokenSigner` en el dominio, e implementaciones con clave derivada en la infraestructura.
+- **Servicios de Dominio (`CosmeticEquipmentPolicy` y `RangeAssignmentService`)**: Desacoplan las invariantes de negocio de Minecraft (arquitectura de cliente, Fabric/Sodium, etc.) y las restricciones de cuenta (`UuidType`) fuera de las entidades físicas.
+- **Verificador Mojang (`IMojangSessionValidator`)**: Interfaz en dominio con implementación en infraestructura que valida identidades premium contra la API oficial de Microsoft/Mojang.
 
 ### Cambiado
 - **Refactorización de `AuthService`**: Inyectado `IPasswordHasher`, eliminadas dependencias estáticas a `BCrypt`/`SHA256`.
 - **Atomicidad de Migración**: Auto-rehash envuelto en transacción de base de datos.
 - **Tests Unitarios**: `AuthServiceTests` actualizado para inyectar `BcryptPasswordHasher`.
 - **Sincronización de Base de Datos**: `docs/database.sql` sincronizado con tipos exactos, transaccionalidad e idempotencia.
+- **Rediseño Completo de `Player`**: Removido `SessionHash` (sesiones 100% volátiles en Redis). Wearables mapeados como columnas de tipo entero anulable (`int?`) en base de datos mediante campos de respaldo privados (`_equippedHatInternalId`, etc.) de EF Core, logrando persistencia O(1) sin consultas extra a disco.
+- **Clave Dual de `CosmeticAsset`**: Modificado para usar una clave interna secuencial (`InternalId`) para base de datos y la clave pública UUID (`CosmeticId`) para el exterior, previniendo ataques de enumeración.
+- **Optimización de Caché Redis (`RedisSessionCache`)**: Purga atómica de sesiones implementada mediante un script Lua precargado usando `UNLINK` no bloqueante. Las sesiones activas del jugador se indexan en un Sorted Set (`ZSET`) con score basado en expiración para autolimpieza automática de memoria.
+- **Configuración de Mapeo EF Core**: Adaptados `PlayerConfiguration`, `CosmeticAssetConfiguration` y `CosmeticAssetVersionConfiguration` para soportar las claves subrogadas, campos de respaldo privados de wearables, y columnas de rango/sincronización eventual.
+- **Políticas de Equipamiento y Compatibilidad de Cuentas**: Refactorizado `CosmeticEquipmentPolicy.cs` para permitir que las cuentas `ICE` (no premium) usen arquitectura `Modern` en versiones modernas. La verificación de Mojang Session API ahora es opcional y solo se ejecuta para cuentas `PREMIUM` cuando el token no es nulo.
+
+### Corregido
+- **Mapping Relacional de Claves en EF Core (PlayerCosmeticOwnership)**: Refactorizado `PlayerCosmeticOwnership` para usar la clave interna secuencial `CosmeticAssetInternalId` (tipo `int`) apuntando a la PK de `CosmeticAsset`, evitando incompatibilidades de tipo y solucionando de raíz el error de compilación del modelo DbContext en EF Core InMemory y PostgreSQL.
+- **Tipos de Claves Foráneas de Jugador**: Actualizado el tipo de `PlayerId` de `Guid` a `PlayerId` en `ExternalAuth`, `BootstrapToken`, `PaymentEvent` y `PlayerCosmeticOwnership` para garantizar coherencia exacta con la clave primaria fuertemente tipada de `Player`.
+- **Esquema de Base de Datos**: Sincronizado por completo el archivo `docs/database.sql` con el modelo real de EF Core.
 
 ### Técnico
 - Suite `BcryptPasswordHasherTests.cs` (6 tests) certificando hashing BCrypt, verificación, detección legacy y matching SHA-256.
 - Sin nuevas dependencias NuGet; sin cambios en `IAuthService` ni `SessionTokenAuthenticationHandler`.
 - 24/24 tests unitarios aprobados sin regresiones.
+- Registro de dependencias actualizado en `Program.cs` para inyectar los nuevos firmadores, validadores de Mojang y políticas del dominio.
 
 ## [2026-05-21] - Fail-Fast de Arquitectura y Certificación BCrypt
 

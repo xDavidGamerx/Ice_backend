@@ -90,9 +90,9 @@ El modelo comercial contempla dos grandes categorías de productos virtuales:
 
 1. **Cosméticos**: Son elementos visuales o de personalización. Incluyen capas, animaciones y posiblemente otros elementos visuales que se definan más adelante. Su propósito es aportar diferenciación visual y valor estético. No están pensados como ventajas funcionales directas, sino como elementos de apariencia, identidad o presentación.
 
-2. **Rangos**: Son una categoría distinta. Su valor no está únicamente en lo visual, sino en los beneficios que otorgan. Los rangos dan beneficios y tienen relación con el launcher y con otros elementos del ecosistema. Un rango puede representar estatus, privilegios, acceso especial, ventajas funcionales o desbloqueos específicos. Los rangos forman parte del modelo comercial pero deben entenderse como una categoría con comportamiento propio.
+2. **Rangos (Suscripción Plus - Estilo Lunar+/Lunar++)**: Los rangos en ICE Launcher no representan privilegios de un servidor de juego jerárquico tradicional, sino una **suscripción premium global del ecosistema (ICE+ / ICE++)**. Su valor radica en el otorgamiento de beneficios de personalización premium, estatus visual destacado dentro del Launcher y la comunidad, acceso a cosméticos exclusivos y características extendidas en el cliente. Son un modelo recurrente de monetización global para el ecosistema.
 
-La diferencia fundamental es: los cosméticos son personalización visual, los rangos son otorgamiento de beneficios.
+La diferencia fundamental es: los cosméticos son personalización visual individual, los rangos son una membresía de beneficios y estatus estético global.
 
 ---
 
@@ -118,8 +118,9 @@ Del contexto se desprenden las siguientes reglas estrictas de negocio:
 
 1.  **Identidad Raíz**: Todo usuario posee una cuenta ICE como identidad base persistente en el sistema. La cuenta de Microsoft es un complemento opcional.
 2.  **Diferenciación de Cuentas**: La plataforma debe identificar y dar soporte tanto a usuarios solo-ICE (no premium) como a usuarios con cuenta Microsoft vinculada sin tratarlos de forma idéntica.
-3.  **Segregación de Catálogo**: Los cosméticos (personalización puramente visual) y los rangos (otorgamiento de beneficios funcionales) son categorías de producto distintas con lógicas de negocio separadas que no deben mezclarse.
+3.  **Segregación de Catálogo**: Los cosméticos (personalización puramente visual) y los rangos (membresía de beneficios estéticos) son categorías de producto distintas con lógicas de negocio separadas que no deben mezclarse.
 4.  **Vigencia e Inventario**: Los productos adquiridos se asocian permanentemente a la cuenta ICE del usuario y deben propagarse de forma consistente e inmediata.
+5.  **Compatibilidad Universal de Versiones (Soporte Multi-versión)**: El Launcher da soporte completo a la ejecución de todas las versiones de Minecraft (desde la versión 1.8.9 Legacy hasta la versión más reciente del juego). Por ende, el backend debe garantizar la retrocompatibilidad absoluta en la entrega de metadatos y assets, discriminando adecuadamente entre la arquitectura Legacy (modelos planos/OBJ en 1.8.9) y Modern (BBMODEL/GeckoLib en versiones más recientes) según la versión que inicie el Launcher.
 
 ---
 

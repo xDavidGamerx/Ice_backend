@@ -34,6 +34,24 @@ namespace IceBackend.Infrastructure.Services
         private readonly IConnectionMultiplexer _redis;
         private readonly ApplicationDbContext _dbContext;
 
+        // Script Lua precargado de forma estática en el Connection Multiplexer (EVALSHA optimizado)
+        private static readonly LuaScript PurgeLuaScript = LuaScript.Prepare(@"
+            -- 1. Eliminar referencias de sesiones ya expiradas del Sorted Set
+            redis.call('ZREMRANGEBYSCORE', KEYS[1], 0, ARGV[1])
+
+            -- 2. Obtener la lista de tokens activos remanentes
+            local activeTokens = redis.call('ZRANGE', KEYS[1], 0, -1)
+
+            -- 3. Eliminar de forma asíncrona cada clave de sesión física usando UNLINK
+            for i, token in ipairs(activeTokens) do
+                redis.call('UNLINK', ARGV[2] .. token)
+            end
+
+            -- 4. Eliminar el Sorted Set secundario de índice
+            redis.call('UNLINK', KEYS[1])
+
+            return #activeTokens");
+
         public RedisSessionCache(
             IDistributedCache cache, 
             IConnectionMultiplexer redis,
@@ -52,6 +70,12 @@ namespace IceBackend.Infrastructure.Services
             
             await _cache.SetAsync(BuildKey(playerId), tokenBytes, options);
             await _cache.SetAsync($"{TokenPrefix}{sessionToken}", playerBytes, options);
+
+            // Registrar la sesión en el Sorted Set de control del jugador (con expiración Unix como score)
+            var db = _redis.GetDatabase();
+            var sessionsIndexKey = $"player:sessions:{playerId}";
+            double expireScore = DateTimeOffset.UtcNow.Add(ttl).ToUnixTimeSeconds();
+            await db.SortedSetAddAsync(sessionsIndexKey, sessionToken, expireScore);
         }
 
         public async Task<string?> GetSessionAsync(string playerId)
@@ -97,13 +121,15 @@ namespace IceBackend.Infrastructure.Services
 
             // 2. Cache Miss: Hidratar desde PostgreSQL (Pattern: Cache-Aside)
             var ownedIds = await _dbContext.PlayerCosmeticOwnerships
-                .Where(o => o.PlayerId == playerId)
-                .Select(o => o.CosmeticId.ToString())
+                .Where(o => o.PlayerId.Value == playerId)
+                .Select(o => o.Cosmetic.Id)
                 .ToListAsync();
 
-            if (ownedIds.Any())
+            var ownedIdStrings = ownedIds.Select(id => id.Value.ToString()).ToList();
+
+            if (ownedIdStrings.Any())
             {
-                var values = ownedIds.Select(id => (RedisValue)id).ToArray();
+                var values = ownedIdStrings.Select(id => (RedisValue)id).ToArray();
                 await db.SetAddAsync(key, values);
                 await db.KeyExpireAsync(key, _inventoryTtl);
             }
@@ -115,7 +141,7 @@ namespace IceBackend.Infrastructure.Services
                 await db.KeyExpireAsync(key, TimeSpan.FromMinutes(5));
             }
 
-            return ownedIds.Contains(cosmeticId.ToString());
+            return ownedIdStrings.Contains(cosmeticId.ToString());
         }
 
         public async Task InvalidatePlayerCosmeticsAsync(Guid playerId)
@@ -139,7 +165,7 @@ namespace IceBackend.Infrastructure.Services
             // 2. Cache Miss: Resolver desde PostgreSQL
             var assetId = await _dbContext.CosmeticAssetVersions
                 .Where(v => v.Sha256Hash == hash)
-                .Select(v => (Guid?)v.CosmeticAssetId)
+                .Select(v => (Guid?)v.CosmeticAsset.Id) // Referenciar la clave UUID de dominio
                 .FirstOrDefaultAsync();
 
             if (assetId.HasValue)
@@ -166,6 +192,20 @@ namespace IceBackend.Infrastructure.Services
                 await _cache.RemoveAsync($"{DevTokenPrefix}{token}");
             }
             await _cache.RemoveAsync($"{DevKeyPrefix}{playerId}");
+        }
+
+        public async Task PurgePlayerSessionsAsync(Guid playerId)
+        {
+            var db = _redis.GetDatabase();
+            var sessionsIndexKey = $"player:sessions:{playerId}";
+            var nowUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+            // Evaluar atómicamente en memoria de Redis usando el script precargado de forma asíncrona
+            await db.ScriptEvaluateAsync(PurgeLuaScript, new
+            {
+                keys = new RedisKey[] { sessionsIndexKey },
+                values = new RedisValue[] { nowUnix, TokenPrefix }
+            });
         }
 
         private static string BuildKey(string playerId) => $"{KeyPrefix}{playerId}";

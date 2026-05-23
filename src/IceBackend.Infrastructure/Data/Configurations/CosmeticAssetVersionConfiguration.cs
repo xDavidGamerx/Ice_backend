@@ -17,8 +17,10 @@ namespace IceBackend.Infrastructure.Data.Configurations
             builder.Property(e => e.Id)
                    .HasColumnType("uuid");
 
-            builder.Property(e => e.CosmeticAssetId)
-                   .HasColumnType("uuid");
+            builder.Property(e => e.CosmeticAssetInternalId)
+                   .HasColumnName("cosmetic_asset_internal_id")
+                   .HasColumnType("integer")
+                   .IsRequired();
 
             // ── Arquitectura almacenada como string (legible en BD) ──────────────
             builder.Property(e => e.Architecture)
@@ -34,7 +36,7 @@ namespace IceBackend.Infrastructure.Data.Configurations
             builder.HasIndex(e => e.Sha256Hash);
 
             // Unicidad compuesta: un solo binario por (cosmético, arquitectura).
-            builder.HasIndex(e => new { e.CosmeticAssetId, e.Architecture })
+            builder.HasIndex(e => new { e.CosmeticAssetInternalId, e.Architecture })
                    .IsUnique();
 
             builder.Property(e => e.SizeBytes)
@@ -65,10 +67,10 @@ namespace IceBackend.Infrastructure.Data.Configurations
             builder.Property(e => e.UploadedAt)
                    .IsRequired();
 
-            // ── FK → CosmeticAsset ───────────────────────────────────────────────
+            // ── FK → CosmeticAsset apuntando al InternalId ───────────────────────
             builder.HasOne(e => e.CosmeticAsset)
                    .WithMany(a => a.Versions)
-                   .HasForeignKey(e => e.CosmeticAssetId)
+                   .HasForeignKey(e => e.CosmeticAssetInternalId)
                    .OnDelete(DeleteBehavior.Cascade); // Si se elimina el cosmético padre, se purgan sus versiones.
         }
     }

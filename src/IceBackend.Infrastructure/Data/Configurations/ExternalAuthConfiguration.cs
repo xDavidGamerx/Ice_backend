@@ -16,6 +16,7 @@ namespace IceBackend.Infrastructure.Data.Configurations
                    .HasColumnType("uuid");
 
             builder.Property(e => e.PlayerId)
+                   .HasConversion(id => id.Value, value => new PlayerId(value))
                    .HasColumnType("uuid");
 
             builder.HasIndex(e => new { e.Provider, e.ExternalId }).IsUnique();

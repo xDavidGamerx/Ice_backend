@@ -106,6 +106,14 @@ builder.Services.AddScoped<IceBackend.Application.Interfaces.ICdnUrlSigner, IceB
 builder.Services.AddScoped<IceBackend.Application.Interfaces.ICosmeticAssetQueryService, IceBackend.Infrastructure.Queries.CosmeticAssetQueryService>();
 builder.Services.AddScoped<IceBackend.Application.Interfaces.IAssetTokenService, IceBackend.Infrastructure.Services.AssetTokenService>();
 
+// Servicios de Dominio y Firmadores Criptográficos (Clean Architecture / DDD)
+builder.Services.AddHttpClient<IceBackend.Domain.Services.IMojangSessionValidator, IceBackend.Infrastructure.Services.MojangSessionValidator>();
+builder.Services.AddScoped<IceBackend.Domain.Services.ICosmeticTokenSigner, IceBackend.Infrastructure.Services.CosmeticTokenSigner>();
+builder.Services.AddScoped<IceBackend.Domain.Services.IRangeTokenSigner, IceBackend.Infrastructure.Services.RangeTokenSigner>();
+builder.Services.AddScoped<IceBackend.Domain.Services.CosmeticEquipmentPolicy>();
+builder.Services.AddScoped<IceBackend.Domain.Services.RangeAssignmentService>();
+
+
 // Client Context: Scoped service populated by middleware from X-Client-Architecture header
 builder.Services.AddScoped<IceBackend.Api.Middleware.ClientContext>();
 builder.Services.AddScoped<IceBackend.Application.Interfaces.IClientContext>(sp => sp.GetRequiredService<IceBackend.Api.Middleware.ClientContext>());

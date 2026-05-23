@@ -22,7 +22,7 @@ namespace IceBackend.Infrastructure.Queries
             var cosmetic = await _dbContext.CosmeticAssets
                 .AsNoTracking()
                 .Include(c => c.Versions)
-                .FirstOrDefaultAsync(c => c.Id == id);
+                .FirstOrDefaultAsync(c => c.Id.Value == id);
 
             if (cosmetic == null)
             {
@@ -39,7 +39,7 @@ namespace IceBackend.Infrastructure.Queries
 
             var responseDto = new CosmeticAssetDto
             {
-                Id = cosmetic.Id,
+                Id = cosmetic.Id.Value, // Obtener el Guid primitivo expuesto en el DTO
                 Type = cosmetic.CosmeticType.ToString(),
                 DisplayName = cosmetic.DisplayName,
                 AssetVersion = cosmetic.AssetVersion,

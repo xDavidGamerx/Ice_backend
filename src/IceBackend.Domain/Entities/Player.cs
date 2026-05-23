@@ -1,21 +1,38 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using IceBackend.Domain.Enums;
+using IceBackend.Domain.Services;
 
 namespace IceBackend.Domain.Entities
 {
     public class Player
     {
-        public Guid Id { get; private set; }
+        public PlayerId Id { get; private set; } = null!;
         public string Username { get; private set; } = null!;
         public UuidType UuidType { get; private set; }
         public string? PasswordHash { get; private set; }
-        public string? SessionHash { get; private set; }
         public DateTime CreatedAt { get; private set; }
 
-        private readonly List<PlayerCosmetic> _equippedCosmetics = new();
-        public IReadOnlyCollection<PlayerCosmetic> EquippedCosmetics => _equippedCosmetics.AsReadOnly();
+        // Rango y Reconciliación eventual de consistencia
+        public string? ActiveRange { get; private set; }
+        public DateTime? RangeExpiresAt { get; private set; }
+        public bool RequiresSessionSync { get; private set; }
+
+        // Propiedades públicas de dominio (Claves no enumerables UUID)
+        public CosmeticId? EquippedHatId { get; private set; }
+        public CosmeticId? EquippedWingId { get; private set; }
+        public CosmeticId? EquippedCapeId { get; private set; }
+        public CosmeticId? EquippedShirtId { get; private set; }
+        public CosmeticId? EquippedPantsId { get; private set; }
+        public CosmeticId? EquippedShoesId { get; private set; }
+
+        // Campos de respaldo de base de datos (Mapeados de forma privada por EF Core en la infraestructura)
+        private int? _equippedHatInternalId;
+        private int? _equippedWingInternalId;
+        private int? _equippedCapeInternalId;
+        private int? _equippedShirtInternalId;
+        private int? _equippedPantsInternalId;
+        private int? _equippedShoesInternalId;
 
         private readonly List<ExternalAuth> _externalAuths = new();
         public IReadOnlyCollection<ExternalAuth> ExternalAuths => _externalAuths.AsReadOnly();
@@ -29,29 +46,18 @@ namespace IceBackend.Domain.Entities
         private readonly List<PaymentEvent> _paymentEvents = new();
         public IReadOnlyCollection<PaymentEvent> PaymentEvents => _paymentEvents.AsReadOnly();
 
-        private Player() { } // Constructor for EF Core
+        private Player() { } // Constructor para EF Core
 
-        public Player(Guid id, string username, UuidType uuidType, string? passwordHash)
+        public Player(PlayerId id, string username, UuidType uuidType, string? passwordHash)
         {
-            if (id == Guid.Empty) throw new ArgumentException("Player ID cannot be empty.", nameof(id));
-            if (string.IsNullOrWhiteSpace(username)) throw new ArgumentException("Username cannot be empty.", nameof(username));
-
-            Id = id;
-            Username = username;
+            Id = id ?? throw new ArgumentNullException(nameof(id));
+            Username = !string.IsNullOrWhiteSpace(username) 
+                ? username 
+                : throw new ArgumentException("El nombre de usuario no puede estar vacío.", nameof(username));
             UuidType = uuidType;
             PasswordHash = passwordHash;
             CreatedAt = DateTime.UtcNow;
-
-            InitializeCosmeticSlots();
-        }
-
-        private void InitializeCosmeticSlots()
-        {
-            var cosmeticSlots = Enum.GetValues(typeof(CosmeticType)).Cast<CosmeticType>();
-            foreach (var slot in cosmeticSlots)
-            {
-                _equippedCosmetics.Add(new PlayerCosmetic(Id, slot));
-            }
+            RequiresSessionSync = false;
         }
 
         public void AddExternalAuth(ExternalAuth auth)
@@ -60,40 +66,195 @@ namespace IceBackend.Domain.Entities
             _externalAuths.Add(auth);
         }
 
-        /// <summary>
-        /// Actualiza de forma segura el hash de la contraseña utilizando un formato más robusto (BCrypt).
-        /// </summary>
         public void UpdatePasswordHash(string newPasswordHash)
         {
             if (string.IsNullOrWhiteSpace(newPasswordHash))
-                throw new ArgumentException("Password hash cannot be empty.", nameof(newPasswordHash));
+                throw new ArgumentException("El hash de la contraseña no puede estar vacío.", nameof(newPasswordHash));
 
             PasswordHash = newPasswordHash;
         }
 
-        /// <summary>
-        /// Equipa un cosmético en el slot correspondiente.
-        /// El cosmético debe ser propiedad del jugador (validado externamente por el UseCase).
-        /// </summary>
-        public void EquipCosmetic(CosmeticType slot, Guid cosmeticId)
+        // --- ASIGNACIÓN DE RANGOS ---
+
+        public void AssignRange(ValidatedRangeAssignmentToken token, IRangeTokenSigner signer, DateTime currentTime)
         {
-            if (cosmeticId == Guid.Empty) throw new ArgumentException("Cosmetic ID cannot be empty.", nameof(cosmeticId));
+            if (token == null) throw new ArgumentNullException(nameof(token));
+            if (signer == null) throw new ArgumentNullException(nameof(signer));
 
-            var playerCosmetic = _equippedCosmetics.FirstOrDefault(c => c.Slot == slot)
-                ?? throw new InvalidOperationException($"Slot '{slot}' not found for player '{Id}'.");
+            // 1. Validar la firma criptográfica simétrica del token
+            if (!signer.VerifyRange(token))
+                throw new InvalidOperationException("La firma del token de asignación de rango es inválida.");
 
-            playerCosmetic.Equip(cosmeticId);
+            if (token.PlayerId != Id)
+                throw new InvalidOperationException("El token de rango no corresponde a este jugador.");
+
+            // 2. Validar expiración inyectada (prevenir replay attacks)
+            if (token.ExpiresAt.HasValue && token.ExpiresAt.Value < currentTime)
+                throw new InvalidOperationException("El token de asignación ha expirado.");
+
+            // 3. Modificar el estado del agregado e indicar reconciliación obligatoria en base de datos
+            ActiveRange = token.RangeType;
+            RangeExpiresAt = token.ExpiresAt;
+            RequiresSessionSync = true;
         }
 
-        /// <summary>
-        /// Desequipa el cosmético del slot indicado, dejándolo vacío.
-        /// </summary>
-        public void UnequipCosmetic(CosmeticType slot)
+        public void ClearSessionSync()
         {
-            var playerCosmetic = _equippedCosmetics.FirstOrDefault(c => c.Slot == slot)
-                ?? throw new InvalidOperationException($"Slot '{slot}' not found for player '{Id}'.");
+            RequiresSessionSync = false;
+        }
 
-            playerCosmetic.Unequip();
+        // --- MÉTODOS DE MUTACIÓN EXPRESIVOS DE WEARABLES ---
+
+        public void Equip(ValidatedEquipmentToken token)
+        {
+            if (token == null) throw new ArgumentNullException(nameof(token));
+
+            switch (token.Slot)
+            {
+                case CosmeticType.HAT:
+                    EquipHat(token);
+                    break;
+                case CosmeticType.WING:
+                    EquipWing(token);
+                    break;
+                case CosmeticType.CAPE:
+                    EquipCape(token);
+                    break;
+                case CosmeticType.SHIRT:
+                    EquipShirt(token);
+                    break;
+                case CosmeticType.PANTS:
+                    EquipPants(token);
+                    break;
+                case CosmeticType.SHOES:
+                    EquipShoes(token);
+                    break;
+                default:
+                    throw new InvalidOperationException($"Ranura de cosmético no soportada: {token.Slot}");
+            }
+        }
+
+        public void Unequip(CosmeticType slot)
+        {
+            switch (slot)
+            {
+                case CosmeticType.HAT:
+                    UnequipHat();
+                    break;
+                case CosmeticType.WING:
+                    UnequipWing();
+                    break;
+                case CosmeticType.CAPE:
+                    UnequipCape();
+                    break;
+                case CosmeticType.SHIRT:
+                    UnequipShirt();
+                    break;
+                case CosmeticType.PANTS:
+                    UnequipPants();
+                    break;
+                case CosmeticType.SHOES:
+                    UnequipShoes();
+                    break;
+                default:
+                    throw new InvalidOperationException($"Ranura de cosmético no soportada: {slot}");
+            }
+        }
+
+        public void EquipHat(ValidatedEquipmentToken token)
+        {
+            ValidateToken(token, CosmeticType.HAT);
+            EquippedHatId = token.CosmeticId;
+            _equippedHatInternalId = token.CosmeticInternalId;
+        }
+
+        public void UnequipHat()
+        {
+            EquippedHatId = null;
+            _equippedHatInternalId = null;
+        }
+
+        public void EquipWing(ValidatedEquipmentToken token)
+        {
+            ValidateToken(token, CosmeticType.WING);
+            EquippedWingId = token.CosmeticId;
+            _equippedWingInternalId = token.CosmeticInternalId;
+        }
+
+        public void UnequipWing()
+        {
+            EquippedWingId = null;
+            _equippedWingInternalId = null;
+        }
+
+        public void EquipCape(ValidatedEquipmentToken token)
+        {
+            ValidateToken(token, CosmeticType.CAPE);
+            EquippedCapeId = token.CosmeticId;
+            _equippedCapeInternalId = token.CosmeticInternalId;
+        }
+
+        public void UnequipCape()
+        {
+            EquippedCapeId = null;
+            _equippedCapeInternalId = null;
+        }
+
+        public void EquipShirt(ValidatedEquipmentToken token)
+        {
+            ValidateToken(token, CosmeticType.SHIRT);
+            EquippedShirtId = token.CosmeticId;
+            _equippedShirtInternalId = token.CosmeticInternalId;
+        }
+
+        public void UnequipShirt()
+        {
+            EquippedShirtId = null;
+            _equippedShirtInternalId = null;
+        }
+
+        public void EquipPants(ValidatedEquipmentToken token)
+        {
+            ValidateToken(token, CosmeticType.PANTS);
+            EquippedPantsId = token.CosmeticId;
+            _equippedPantsInternalId = token.CosmeticInternalId;
+        }
+
+        public void UnequipPants()
+        {
+            EquippedPantsId = null;
+            _equippedPantsInternalId = null;
+        }
+
+        public void EquipShoes(ValidatedEquipmentToken token)
+        {
+            ValidateToken(token, CosmeticType.SHOES);
+            EquippedShoesId = token.CosmeticId;
+            _equippedShoesInternalId = token.CosmeticInternalId;
+        }
+
+        public void UnequipShoes()
+        {
+            EquippedShoesId = null;
+            _equippedShoesInternalId = null;
+        }
+
+        // --- VALIDACIONES DE CONSISTENCIA DE NEGOCIO ---
+
+        private void ValidateToken(ValidatedEquipmentToken token, CosmeticType expectedSlot)
+        {
+            if (token == null) throw new ArgumentNullException(nameof(token));
+
+            // 1. Validar expiración (Prevención de Replay Attacks)
+            if (DateTime.UtcNow > token.ExpiredAt)
+                throw new InvalidOperationException("El token de equipamiento ha expirado.");
+
+            // 2. Garantizar consistencia de jugador y slot
+            if (token.PlayerId != Id)
+                throw new InvalidOperationException("El token pertenece a otro jugador.");
+
+            if (token.Slot != expectedSlot)
+                throw new InvalidOperationException($"El token no corresponde a la ranura '{expectedSlot}'.");
         }
     }
 }

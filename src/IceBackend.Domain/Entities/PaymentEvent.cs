@@ -10,7 +10,7 @@ namespace IceBackend.Domain.Entities
         public string ProviderEventId { get; private set; } = null!;
         public string PaymentIntentId { get; private set; } = null!;
 
-        public Guid PlayerId { get; private set; }
+        public PlayerId PlayerId { get; private set; } = null!;
         public Player Player { get; private set; } = null!;
 
         public string Status { get; private set; } = null!;
@@ -21,12 +21,12 @@ namespace IceBackend.Domain.Entities
 
         private PaymentEvent() { }
 
-        public PaymentEvent(Guid id, PaymentProvider provider, string providerEventId, string paymentIntentId, Guid playerId, string status, string rawEvent)
+        public PaymentEvent(Guid id, PaymentProvider provider, string providerEventId, string paymentIntentId, PlayerId playerId, string status, string rawEvent)
         {
             if (id == Guid.Empty) throw new ArgumentException("ID cannot be empty.", nameof(id));
             if (string.IsNullOrWhiteSpace(providerEventId)) throw new ArgumentException("Provider Event ID cannot be empty.", nameof(providerEventId));
             if (string.IsNullOrWhiteSpace(paymentIntentId)) throw new ArgumentException("Payment Intent ID cannot be empty.", nameof(paymentIntentId));
-            if (playerId == Guid.Empty) throw new ArgumentException("Player ID cannot be empty.", nameof(playerId));
+            if (playerId == null) throw new ArgumentNullException(nameof(playerId));
 
             Id = id;
             Provider = provider;
