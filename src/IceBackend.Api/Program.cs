@@ -5,9 +5,18 @@ using IceBackend.Infrastructure.Data;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Serilog;
 
-// 1. Cargar archivo .env local para desarrollo
-var envPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", ".env");
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console(new Serilog.Formatting.Compact.CompactJsonFormatter())
+    .CreateBootstrapLogger();
+
+try
+{
+    Log.Information("Iniciando ICE Backend API...");
+
+    // 1. Cargar archivo .env local para desarrollo
+    var envPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", ".env");
 if (!File.Exists(envPath)) 
 {
     envPath = Path.Combine(Directory.GetCurrentDirectory(), ".env"); // Fallback
@@ -27,7 +36,12 @@ if (File.Exists(envPath))
 }
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Configuration.AddEnvironmentVariables(); // Ensure env vars override appsettings
+    builder.Configuration.AddEnvironmentVariables(); // Ensure env vars override appsettings
+
+    builder.Host.UseSerilog((context, services, configuration) => configuration
+        .ReadFrom.Configuration(context.Configuration)
+        .ReadFrom.Services(services)
+        .Enrich.FromLogContext());
 
 // 2. Validación estricta de entorno (Fail-Fast)
 var postgresConn = builder.Configuration.GetConnectionString("PostgresConnection");
@@ -168,4 +182,13 @@ app.MapHealthChecks("/health", new HealthCheckOptions
     }
 });
 
-app.Run();
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "La aplicación terminó inesperadamente");
+}
+finally
+{
+    Log.CloseAndFlush();
+}
