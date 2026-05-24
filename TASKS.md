@@ -92,7 +92,7 @@ Aquí se consolidan y detallan las tareas pendientes del proyecto (incluyendo ne
     - **Archivos afectados**: `src/IceBackend.Api/Program.cs`, `appsettings.json`
     - **Descripción**: Integrar y configurar Serilog para escribir logs estructurados en formato JSON (consola y archivo) que faciliten la auditoría de excepciones y webhooks.
 
-11. - [ ] **Escribir suite de Tests de Integración**
+11. - [x] **Escribir suite de Tests de Integración**
     - **Prioridad**: Media
     - **Archivos afectados**: `tests/IceBackend.IntegrationTests/*`
     - **Descripción**: Desarrollar pruebas integradas de extremo a extremo (usando Testcontainers de Postgres y Redis si es viable) para certificar webhooks de Stripe y flujos de sesión.

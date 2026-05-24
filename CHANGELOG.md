@@ -2,7 +2,7 @@
 
 Este archivo registra las modificaciones importantes, correcciones de errores y nuevas funcionalidades implementadas en el proyecto, junto con su justificación técnica.
 
-## [2026-05-23] - Transaccionalidad de Webhooks, Mitigación de Caché (Task 15) y Logs (Task 10)
+## [2026-05-23] - Testcontainers E2E (Task 11), Mitigación de Caché (Task 15) y Logs (Task 10)
 
 ### Añadido
 - **Serilog (`Task 10`)**: Configuración completa de *Serilog* sustituyendo al logger por defecto. Logs estructurados JSON (`CompactJsonFormatter`) con fail-fast environment. Redireccionamiento del sink `File` exclusivo al `appsettings.Development.json` para proteger contenedores de producción de I/O bloqueante.
@@ -14,9 +14,10 @@ Este archivo registra las modificaciones importantes, correcciones de errores y 
 - **Transaccionalidad en Webhooks (Stripe)**: Removida la purga asíncrona dentro de los handlers y del bloque `finally` ciego en `StripeWebhookService`. Ahora recolecta *PlayerIds* concurrentemente (`ConcurrentBag<Guid>`) y los purga en iteración **sólo si** el pipeline principal confirma el `.CommitAsync()` hacia PostgreSQL exitosamente.
 
 ### Técnico
+- **Testcontainers E2E (`Task 11`)**: Refactorizada la suite E2E aislando Timeouts mediante *Polly WrapAsync* independiente (Docker Fail-Fast) y protegiendo el multihilo aislando estado con purga atómica determinista `UNLINK` (*FireAndForget*) en llaves acotadas por prueba. Implementación unitaria pura de firmas HMAC en `StripeSignatureUnitTests`.
 - Reescritura del bootstrap en `Program.cs` para inmutabilidad del cargador de entorno `.env` atado a `ASPNETCORE_ENVIRONMENT == "Development"`.
-- `TASKS.md`: Marcadas Tarea 10 y Tarea 15 como completadas.
-- `dotnet test`: 40/40 pruebas certificadas.
+- `TASKS.md`: Marcadas Tarea 10, Tarea 11 y Tarea 15 como completadas.
+- `dotnet build tests/IceBackend.IntegrationTests`: Completado con 0 errores.
 
 ## [2026-05-22] - Suscripción ICE+: Modelo de Datos, Beneficios y Caché
 

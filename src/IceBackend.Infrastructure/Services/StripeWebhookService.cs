@@ -203,9 +203,6 @@ namespace IceBackend.Infrastructure.Services
             player.CancelIcePlusSubscription(DateTime.UtcNow);
             await _dbContext.SaveChangesAsync();
 
-            // Remover sesión física de inmediato (es un logout forzoso opcional, mantengo tu lógica)
-            await _sessionCache.RemoveSessionAsync(player.Id.ToString());
-
             // Registrar ID afectado para la purga post-commit
             affectedPlayers.Add(player.Id);
             
