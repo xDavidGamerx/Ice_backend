@@ -57,7 +57,7 @@ Aquí se consolidan y detallan las tareas pendientes del proyecto (incluyendo ne
    - **Archivos afectados**: `IceBackend.Api`, `IceBackend.Application`, `IceBackend.Infrastructure`
    - **Descripción**: Creado endpoint `POST /api/v1/dev/login` protegido por guardia de entorno (`IsDevelopment`), token maestro (`DEV_MASTER_TOKEN`) y oculto de Swagger. Sesiones aisladas con prefijo `dev_session:` en Redis. `GetPlayerIdBySessionAsync` resuelve ambos prefijos.
 
-4. - [ ] **Sincerar y documentar estrategia de sesión en Redis**
+4. - [x] **Sincerar y documentar estrategia de sesión en Redis**
    - **Prioridad**: Media
    - **Archivos afectados**: `docs/local-runbook.md`, `.skills/TechnicalContextSkill.md`
    - **Descripción**: Documentar la arquitectura de sesiones Redis (`SessionToken`) descartando formalmente la migración a JWT propuesta por Kevin, ya que la sesión en Redis está plenamente decidida y operativa.
@@ -116,3 +116,24 @@ Aquí se consolidan y detallan las tareas pendientes del proyecto (incluyendo ne
      - **Prioridad**: Alta
      - **Archivos afectados**: `src/IceBackend.Infrastructure/Services/RedisSessionCache.cs`
      - **Descripción**: Modificar la estrategia de Cache-Aside de suscripciones ICE+ para almacenar explícitamente valores nulos con expiración corta cuando la consulta a PostgreSQL no arroje resultados, evitando que consultas a IDs inexistentes degraden la base de datos.
+
+---
+
+## 3. Fase 4: Demo y Portabilidad (Opcional — Mejora de Presentación)
+
+Tareas orientadas a hacer el proyecto portable (Docker) y demostrable (datos de prueba, endpoints visibles). No son deuda técnica ni bloquean producción.
+
+16. - [x] **Dockerizar la API e integrarla en docker-compose**
+     - **Prioridad**: Alta (para demo)
+     - **Archivos afectados**: [NEW] `src/IceBackend.Api/Dockerfile`, `docker-compose.yml`
+     - **Descripción**: Crear `Dockerfile` multi-stage en `src/IceBackend.Api/` y agregar el servicio `api` al `docker-compose.yml` con healthchecks en postgres/redis. Objetivo: `docker-compose up --build` levanta API + Postgres + Redis automáticamente.
+
+17. - [ ] **Endpoint `/api/v1/dev/seed` para datos de prueba**
+     - **Prioridad**: Alta (para demo)
+     - **Archivos afectados**: [NEW] `src/IceBackend.Api/Controllers/DevSeedController.cs`
+     - **Descripción**: Crear endpoint idempotente que siembra 2 jugadores (1 con ICE+ activo y 3 meses acumulados, 1 sin suscripción), 3 cosméticos demo y 2 ownerships. Protegido con guardia de entorno `Development`.
+
+18. - [ ] **Endpoint `GET /api/v1/subscription/me`**
+     - **Prioridad**: Media (para demo)
+     - **Archivos afectados**: [NEW] `src/IceBackend.Api/Controllers/SubscriptionController.cs`
+     - **Descripción**: Endpoint autenticado que retorna `{ isActive, accumulatedMonths, benefits: [...], stripeSubscriptionId, expiresAt }`. Usa `GetIcePlusBenefitsAsync` + consulta a DB. Visible desde Swagger.

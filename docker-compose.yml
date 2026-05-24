@@ -13,6 +13,11 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
@@ -22,6 +27,31 @@ services:
     volumes:
       - redis_data:/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: src/IceBackend.Api/Dockerfile
+    container_name: ice_api
+    ports:
+      - "5000:8080"   # Si el 5000 está ocupado, cambiar el izquierdo (ej: 5001:8080)
+    env_file:
+      - .env
+    environment:
+      # Solo overrides de red: .env usa localhost, acá usamos hostnames internos de Docker
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__PostgresConnection: "Host=postgres;Database=ice;Username=postgres;Password=password"
+      ConnectionStrings__RedisConnection: "redis:6379"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
 volumes:
   postgres_data:

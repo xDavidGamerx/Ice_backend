@@ -2,6 +2,21 @@
 
 Este archivo registra las modificaciones importantes, correcciones de errores y nuevas funcionalidades implementadas en el proyecto, junto con su justificación técnica.
 
+## [2026-05-24] - Portabilidad y Dockerización (Task 16)
+
+### Añadido
+- **Dockerfile multi-stage** (`src/IceBackend.Api/Dockerfile`): Build con SDK 8.0 y runtime ASP.NET 8.0 con cache de capas para NuGet restore.
+- **Servicio `api` en docker-compose.yml**: Integración completa con `env_file: .env` para heredar configuración y solo 2 overrides de red (`ConnectionStrings`) para apuntar a los hostnames internos de Docker.
+- **Healthchecks en Postgres y Redis**: `pg_isready` y `redis-cli ping` con `condition: service_healthy` para evitar que la API arranque antes que los motores.
+
+### Cambiado
+- **`docker-compose.yml`**: Agregados healthchecks a servicios `postgres` y `redis`. Agregado servicio `api` con mapeo `5000:8080`.
+- **`docs/local-runbook.md`**: Agregada sección de ejecución con Docker Compose (API incluida), nota sobre dependencia del `.env`.
+
+### Técnico
+- Principio DRY aplicado a la configuración: Stripe, OAuth, CDN y Auth viven exclusivamente en `.env` (gitignorado). `docker-compose.yml` solo define las 2 rutas de red que cambian dentro del contenedor.
+- `dotnet build`: 0 errores. `dotnet test`: 40/40 tests unitarios superados sin regresiones.
+
 ## [2026-05-23] - Testcontainers E2E (Task 11), Mitigación de Caché (Task 15) y Logs (Task 10)
 
 ### Añadido

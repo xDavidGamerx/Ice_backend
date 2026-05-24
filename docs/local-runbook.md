@@ -33,6 +33,17 @@ docker-compose up -d
 docker-compose ps
 ```
 
+Ejecutar con Docker Compose (API incluida):
+```bash
+# Asegúrate de tener .env en la raíz del proyecto
+docker-compose up --build -d
+
+# API disponible en: http://localhost:5000/swagger
+# Health check: http://localhost:5000/health
+```
+
+> **Nota**: El `.env` debe existir antes de ejecutar `docker-compose up`. Las variables de Stripe, OAuth y CDN NO se definen en `docker-compose.yml`; se heredan del `.env`. Si alguna falta, la API fallará al arrancar con `ValidateOnStart()`.
+
 ## 4. Inicializar y Migrar la Base de Datos
 
 Una vez que PostgreSQL está corriendo, aplica las migraciones de EF Core para generar el esquema:
