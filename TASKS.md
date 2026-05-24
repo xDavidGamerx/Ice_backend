@@ -137,3 +137,8 @@ Tareas orientadas a hacer el proyecto portable (Docker) y demostrable (datos de 
      - **Prioridad**: Media (para demo)
      - **Archivos afectados**: [NEW] `src/IceBackend.Api/Controllers/SubscriptionController.cs`
      - **Descripción**: Endpoint autenticado que retorna `{ isActive, accumulatedMonths, benefits: [...], stripeSubscriptionId, expiresAt }`. Usa `GetIcePlusBenefitsAsync` + consulta a DB. Visible desde Swagger.
+
+19. - [x] **Corregir mock JSON de Stripe en tests de integración**
+      - **Prioridad**: Alta (bloquea validación de webhooks)
+      - **Archivos afectados**: `tests/IceBackend.IntegrationTests/Fixtures/StripeSignatureHelper.cs`
+      - **Descripción**: `BuildStripePayload()` genera JSON simplificado incompatible con la versión actual de `Stripe.net`. El `EventConverter` interno espera campos adicionales del estándar (discriminador `"object"`, estructura anidada completa), y al no encontrarlos lanza `NullReferenceException` al deserializar. Reestructurar el payload mock para que `EventUtility.ParseEvent()`/`ConstructEvent()` no falle, manteniendo los datos mínimos que necesita la lógica de negocio (`customer`, `subscription`, `billing_reason`).

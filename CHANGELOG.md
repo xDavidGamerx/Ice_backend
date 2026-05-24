@@ -13,9 +13,13 @@ Este archivo registra las modificaciones importantes, correcciones de errores y 
 - **`docker-compose.yml`**: Agregados healthchecks a servicios `postgres` y `redis`. Agregado servicio `api` con mapeo `5000:8080`.
 - **`docs/local-runbook.md`**: Agregada sección de ejecución con Docker Compose (API incluida), nota sobre dependencia del `.env`.
 
+### Corregido
+- **Suite E2E (Plan v2)**: Solucionado `CS0618` en constructores de Testcontainers (`PostgreSqlBuilder` y `RedisBuilder`). Rutas de webhook en pruebas emparejadas con Attribute Routing estricto (`/api/Webhooks/stripe`).
+- **Redis y EF Core (Plan v2)**: Eliminada fuga de traducción LINQ al comparar Value Objects en `RedisSessionCache.cs` (usando instanciación explícita `== new PlayerId()`). Corregido binding de variables nombradas en Lua `ScriptEvaluateAsync`.
+
 ### Técnico
 - Principio DRY aplicado a la configuración: Stripe, OAuth, CDN y Auth viven exclusivamente en `.env` (gitignorado). `docker-compose.yml` solo define las 2 rutas de red que cambian dentro del contenedor.
-- `dotnet build`: 0 errores. `dotnet test`: 40/40 tests unitarios superados sin regresiones.
+- `dotnet build`: 0 errores. Correcciones post-dockerización de caché de sesión y Testcontainers.
 
 ## [2026-05-23] - Testcontainers E2E (Task 11), Mitigación de Caché (Task 15) y Logs (Task 10)
 
@@ -27,6 +31,9 @@ Este archivo registra las modificaciones importantes, correcciones de errores y 
 - **Integridad Semántica de Sets (Redis)**: Se reemplazó el centinela en texto plano (`"NONE"`) por una llave auxiliar de bloqueo (`inventory:player:{id}:empty_flag`). Evaluada de forma concurrente mediante un pipeline `Task.WhenAll` sin $O(1)$ adicional.
 - **Transaccionalidad en Mutaciones**: En `EquipCosmeticUseCase` y `UnequipCosmeticUseCase`, la purga reactiva de caché fue removida del bloque `catch` inerte y amarrada de manera síncrona post-éxito del `SaveChangesAsync()`.
 - **Transaccionalidad en Webhooks (Stripe)**: Removida la purga asíncrona dentro de los handlers y del bloque `finally` ciego en `StripeWebhookService`. Ahora recolecta *PlayerIds* concurrentemente (`ConcurrentBag<Guid>`) y los purga en iteración **sólo si** el pipeline principal confirma el `.CommitAsync()` hacia PostgreSQL exitosamente.
+
+### Corregido
+- **Mock JSON de Stripe (Task 19)**: Modificado `StripeSignatureHelper.BuildStripePayload()` para generar una estructura JSON más estricta (`api_version`, `livemode`, bloque `request` e `id` del objeto interno). Esto previene que el SDK oficial de Stripe (`Stripe.net` v40+) arroje un `NullReferenceException` interno (`JsonUtils.DeserializeObject`) al instanciar el evento durante las pruebas de los webhooks de integración.
 
 ### Técnico
 - **Testcontainers E2E (`Task 11`)**: Refactorizada la suite E2E aislando Timeouts mediante *Polly WrapAsync* independiente (Docker Fail-Fast) y protegiendo el multihilo aislando estado con purga atómica determinista `UNLINK` (*FireAndForget*) en llaves acotadas por prueba. Implementación unitaria pura de firmas HMAC en `StripeSignatureUnitTests`.
