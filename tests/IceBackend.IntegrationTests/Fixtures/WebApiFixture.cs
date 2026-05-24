@@ -12,7 +12,7 @@ using Xunit;
 namespace IceBackend.IntegrationTests.Fixtures
 {
     [CollectionDefinition("IntegrationTests")]
-    public class IntegrationTestsCollection : ICollectionFixture<PostgreSqlFixture>, ICollectionFixture<WebApiFixture>
+    public class IntegrationTestsCollection : ICollectionFixture<WebApiFixture>
     {
         // This class has no code, and is never created. Its purpose is simply
         // to be the place to apply [CollectionDefinition] and all the
@@ -21,12 +21,7 @@ namespace IceBackend.IntegrationTests.Fixtures
 
     public class WebApiFixture : WebApplicationFactory<Program>, IAsyncLifetime
     {
-        private readonly PostgreSqlFixture _dbFixture;
-
-        public WebApiFixture(PostgreSqlFixture dbFixture)
-        {
-            _dbFixture = dbFixture;
-        }
+        public PostgreSqlFixture DbFixture { get; } = new();
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
@@ -34,8 +29,8 @@ namespace IceBackend.IntegrationTests.Fixtures
             {
                 var dict = new Dictionary<string, string?>
                 {
-                    { "ConnectionStrings:PostgresConnection", _dbFixture.PostgresConnectionString },
-                    { "ConnectionStrings:RedisConnection", _dbFixture.RedisConnectionString },
+                    { "ConnectionStrings:PostgresConnection", DbFixture.PostgresConnectionString },
+                    { "ConnectionStrings:RedisConnection", DbFixture.RedisConnectionString },
                     { "Stripe:WebhookSecret", "whsec_test_secret" },
                     { "Stripe:SecretKey", "sk_test_fake" },
                     { "ASPNETCORE_ENVIRONMENT", "Testing" }
@@ -54,8 +49,26 @@ namespace IceBackend.IntegrationTests.Fixtures
             });
         }
 
-        public Task InitializeAsync() => Task.CompletedTask;
-        public new Task DisposeAsync() => Task.CompletedTask;
+        public async Task InitializeAsync()
+        {
+            await DbFixture.InitializeAsync();
+
+            // Establecer variables de entorno de proceso para pasar validaciones Fail-Fast en Program.cs
+            Environment.SetEnvironmentVariable("ConnectionStrings__PostgresConnection", DbFixture.PostgresConnectionString);
+            Environment.SetEnvironmentVariable("ConnectionStrings__RedisConnection", DbFixture.RedisConnectionString);
+            Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Testing");
+        }
+
+        public new async Task DisposeAsync()
+        {
+            // Limpiar variables de entorno
+            Environment.SetEnvironmentVariable("ConnectionStrings__PostgresConnection", null);
+            Environment.SetEnvironmentVariable("ConnectionStrings__RedisConnection", null);
+            Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", null);
+
+            await DbFixture.DisposeAsync();
+            await base.DisposeAsync();
+        }
     }
 
     public class FakeStripeWebhookValidator : IStripeWebhookValidator

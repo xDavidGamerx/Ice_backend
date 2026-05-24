@@ -20,9 +20,11 @@ namespace IceBackend.IntegrationTests.Fixtures
             return $$"""
             {
                 "id": "evt_test_{{Guid.NewGuid():N}}",
+                "object": "event",
                 "type": "{{status}}",
                 "data": {
                     "object": {
+                        "object": "{{(status.StartsWith("invoice") ? "invoice" : "subscription")}}",
                         "customer": "{{customerId}}",
                         "subscription": "{{subscriptionId}}",
                         "billing_reason": "{{billingReason}}",

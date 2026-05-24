@@ -19,7 +19,7 @@ namespace IceBackend.IntegrationTests.Unit
             optionsMock.Setup(o => o.Value).Returns(new IceBackend.Application.Options.StripeOptions { WebhookSecret = "whsec_test_secret" });
 
             var validator = new StripeWebhookValidator(optionsMock.Object, new NullLogger<StripeWebhookValidator>());
-            var payload = "{\"id\":\"evt_test\",\"type\":\"invoice.paid\"}";
+            var payload = "{\"id\":\"evt_test\",\"object\":\"event\",\"type\":\"invoice.paid\"}";
             var secret = "whsec_test_secret";
             var signature = StripeSignatureHelper.GenerateSignature(payload, secret);
 

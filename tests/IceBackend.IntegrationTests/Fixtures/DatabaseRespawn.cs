@@ -13,7 +13,11 @@ namespace IceBackend.IntegrationTests.Fixtures
             var respawner = await Respawner.CreateAsync(conn, new RespawnerOptions
             {
                 DbAdapter = DbAdapter.Postgres,
-                SchemasToInclude = new[] { "public" }
+                SchemasToInclude = new[] { "public" },
+                TablesToIgnore = new[]
+                {
+                    new Respawn.Graph.Table("__EFMigrationsHistory")
+                }
             });
             await respawner.ResetAsync(conn);
         }

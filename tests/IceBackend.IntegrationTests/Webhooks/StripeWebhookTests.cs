@@ -52,9 +52,9 @@ namespace IceBackend.IntegrationTests.Webhooks
 
         private async Task SendWebhookAsync(string payload)
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/webhooks/stripe");
+            var request = new HttpRequestMessage(HttpMethod.Post, "/api/Webhooks/stripe");
             request.Content = new StringContent(payload, Encoding.UTF8, "application/json");
-            // Nota: FakeStripeWebhookValidator asume el bypass criptográfico, no requiere Stripe-Signature real.
+            request.Headers.Add("Stripe-Signature", "t=123,v1=dummy");
             
             var response = await _client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -64,11 +64,13 @@ namespace IceBackend.IntegrationTests.Webhooks
         public async Task C1_InvoicePaid_SubscriptionCreate_ShouldActivateIcePlus()
         {
             // Arrange
-            var playerId = new PlayerId(Guid.NewGuid());
+            var playerId = new PlayerId(Guid.Parse("00000000-0000-0000-0000-000000000001"));
             _trackedKeys.AddRange(new RedisKey[] { $"subscription:player:{playerId}", $"player:sessions:{playerId}", $"inventory:player:{playerId}" });
+            
+            // C1. Jugador con rango antiguo que expiró (simular)
             var player = new Player(playerId, "test_user", UuidType.ICE, null);
             player.AddExternalAuth(new ExternalAuth(Guid.NewGuid(), playerId, AuthProvider.STRIPE, "cus_test_001", null));
-            player.AssignIcePlusSubscription("sub_old", false, -1, DateTime.UtcNow.AddDays(-10)); // expirada/inactiva
+            player.AssignIcePlusSubscription("sub_old", false, 30, DateTime.UtcNow.AddDays(-40));
             _db.Players.Add(player);
             await _db.SaveChangesAsync();
 

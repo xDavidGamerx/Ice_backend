@@ -138,7 +138,7 @@ namespace IceBackend.Infrastructure.Services
 
             // 2. Cache Miss: Hidratar desde PostgreSQL (Pattern: Cache-Aside)
             var ownedIds = await _dbContext.PlayerCosmeticOwnerships
-                .Where(o => o.PlayerId.Value == playerId)
+                .Where(o => o.PlayerId == new IceBackend.Domain.Entities.PlayerId(playerId))
                 .Select(o => o.Cosmetic.Id)
                 .ToListAsync();
 
@@ -217,12 +217,9 @@ namespace IceBackend.Infrastructure.Services
             var sessionsIndexKey = $"player:sessions:{playerId}";
             var nowUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
-            // Evaluar atómicamente en memoria de Redis usando el script precargado de forma asíncrona
-            await db.ScriptEvaluateAsync(PurgeLuaScript, new
-            {
-                keys = new RedisKey[] { sessionsIndexKey },
-                values = new RedisValue[] { nowUnix, TokenPrefix }
-            });
+            await db.ScriptEvaluateAsync(PurgeLuaScript.ExecutableScript,
+                keys: new RedisKey[] { sessionsIndexKey },
+                values: new RedisValue[] { nowUnix, TokenPrefix });
 
             await InvalidatePlayerSubscriptionAsync(playerId);
         }
@@ -249,7 +246,7 @@ namespace IceBackend.Infrastructure.Services
 
             // 2. Cache Miss: Rehidratar desde PostgreSQL (Cache-Aside)
             var subscription = await _dbContext.PlayerSubscriptions
-                .FirstOrDefaultAsync(s => s.PlayerId.Value == playerId);
+                .FirstOrDefaultAsync(s => s.PlayerId == new IceBackend.Domain.Entities.PlayerId(playerId));
 
             if (subscription == null || !subscription.IsActive || (subscription.ExpiresAt.HasValue && subscription.ExpiresAt.Value < DateTime.UtcNow))
             {
