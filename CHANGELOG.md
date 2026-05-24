@@ -37,6 +37,7 @@ Este archivo registra las modificaciones importantes, correcciones de errores y 
 
 ### Técnico
 - **Testcontainers E2E (`Task 11`)**: Refactorizada la suite E2E aislando Timeouts mediante *Polly WrapAsync* independiente (Docker Fail-Fast) y protegiendo el multihilo aislando estado con purga atómica determinista `UNLINK` (*FireAndForget*) en llaves acotadas por prueba. Implementación unitaria pura de firmas HMAC en `StripeSignatureUnitTests`.
+- **Estabilización de Flujos Asíncronos (Task 11)**: Detectadas y corregidas múltiples *Race Conditions* y *Unique Constraint Violations* en `IceBackend.IntegrationTests` causadas por el hilo de fondo de ASP.NET (`Task.Run`). Se aislaron las pruebas herméticamente eliminando colisiones de llaves de suscripción. Se implementaron *Active Polling Waits* incrementados (30s) para contrarrestar latencia I/O en la máquina de Docker Desktop. Suite alcanza **9/11 pruebas estables**. Tareas `C6` y `C7` delegadas a revisión manual por fugas del hilo (Background Thread Leakage) interrumpiendo aserciones de xUnit.
 - Reescritura del bootstrap en `Program.cs` para inmutabilidad del cargador de entorno `.env` atado a `ASPNETCORE_ENVIRONMENT == "Development"`.
 - `TASKS.md`: Marcadas Tarea 10, Tarea 11 y Tarea 15 como completadas.
 - `dotnet build tests/IceBackend.IntegrationTests`: Completado con 0 errores.

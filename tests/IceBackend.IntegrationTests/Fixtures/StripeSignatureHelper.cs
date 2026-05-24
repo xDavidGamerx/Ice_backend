@@ -15,9 +15,9 @@ namespace IceBackend.IntegrationTests.Fixtures
             return $"t={timestamp},v1={signature}";
         }
 
-        public static string BuildStripePayload(string customerId, string subscriptionId, string billingReason, string status)
+        public static string BuildStripePayload(string customerId, string subscriptionId, string billingReason, string status, string? eventId = null)
         {
-            var eventId = Guid.NewGuid().ToString("N");
+            eventId ??= Guid.NewGuid().ToString("N");
             var objectId = Guid.NewGuid().ToString("N");
             return $$"""
             {

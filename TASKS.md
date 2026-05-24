@@ -95,7 +95,7 @@ Aquí se consolidan y detallan las tareas pendientes del proyecto (incluyendo ne
 11. - [x] **Escribir suite de Tests de Integración**
     - **Prioridad**: Media
     - **Archivos afectados**: `tests/IceBackend.IntegrationTests/*`
-    - **Descripción**: Desarrollar pruebas integradas de extremo a extremo (usando Testcontainers de Postgres y Redis si es viable) para certificar webhooks de Stripe y flujos de sesión.
+    - **Descripción**: Desarrollar pruebas integradas de extremo a extremo (usando Testcontainers de Postgres y Redis si es viable) para certificar webhooks de Stripe y flujos de sesión. *(Status: 9/11 Passing. Investigacion pausada por flakiness asíncrono en hilo de fondo en C6 y C7)*.
 
 12. - [x] **Evitar anemia del dominio con Value Objects / Encapsulamiento**
     - **Prioridad**: Media

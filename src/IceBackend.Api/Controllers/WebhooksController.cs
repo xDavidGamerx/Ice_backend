@@ -1,5 +1,6 @@
 using IceBackend.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace IceBackend.Api.Controllers
@@ -9,16 +10,16 @@ namespace IceBackend.Api.Controllers
     public class WebhooksController : ControllerBase
     {
         private readonly IStripeWebhookValidator _validator;
-        private readonly IStripeWebhookService _webhookService;
+        private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<WebhooksController> _logger;
 
         public WebhooksController(
             IStripeWebhookValidator validator,
-            IStripeWebhookService webhookService,
+            IServiceProvider serviceProvider,
             ILogger<WebhooksController> logger)
         {
             _validator = validator;
-            _webhookService = webhookService;
+            _serviceProvider = serviceProvider;
             _logger = logger;
         }
 
@@ -61,14 +62,18 @@ namespace IceBackend.Api.Controllers
             // Esto evita que Stripe agote su timeout (30s) y reintente el evento.
             _ = Task.Run(async () =>
             {
+                using var scope = _serviceProvider.CreateScope();
+                var webhookService = scope.ServiceProvider.GetRequiredService<IStripeWebhookService>();
+                var backgroundLogger = scope.ServiceProvider.GetRequiredService<ILogger<WebhooksController>>();
+                
                 try
                 {
-                    await _webhookService.HandleEventAsync(webhookEvent);
+                    await webhookService.HandleEventAsync(webhookEvent);
                 }
                 catch (Exception ex)
                 {
                     // El error queda logueado; Stripe reintentará si necesario.
-                    _logger.LogError(ex, "Background webhook processing failed for EventId: {EventId}", webhookEvent.EventId);
+                    backgroundLogger.LogError(ex, "Background webhook processing failed for EventId: {EventId}", webhookEvent.EventId);
                 }
             });
 

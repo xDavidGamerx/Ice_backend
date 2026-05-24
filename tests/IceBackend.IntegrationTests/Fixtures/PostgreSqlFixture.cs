@@ -10,13 +10,9 @@ namespace IceBackend.IntegrationTests.Fixtures
 {
     public class PostgreSqlFixture : IAsyncLifetime
     {
-        private readonly PostgreSqlContainer _pg = new PostgreSqlBuilder()
-            .WithImage("postgres:15")
-            .Build();
+        private readonly PostgreSqlContainer _pg = new PostgreSqlBuilder("postgres:15").Build();
 
-        private readonly RedisContainer _redis = new RedisBuilder()
-            .WithImage("redis:7")
-            .Build();
+        private readonly RedisContainer _redis = new RedisBuilder("redis:7").Build();
 
         public string PostgresConnectionString => _pg.GetConnectionString();
         public string RedisConnectionString => _redis.GetConnectionString();

@@ -30,7 +30,7 @@ namespace IceBackend.IntegrationTests.Fixtures
                 var dict = new Dictionary<string, string?>
                 {
                     { "ConnectionStrings:PostgresConnection", DbFixture.PostgresConnectionString },
-                    { "ConnectionStrings:RedisConnection", DbFixture.RedisConnectionString },
+                    { "ConnectionStrings:RedisConnection", DbFixture.RedisConnectionString + ",allowAdmin=true" },
                     { "Stripe:WebhookSecret", "whsec_test_secret" },
                     { "Stripe:SecretKey", "sk_test_fake" },
                     { "ASPNETCORE_ENVIRONMENT", "Testing" }
@@ -55,7 +55,7 @@ namespace IceBackend.IntegrationTests.Fixtures
 
             // Establecer variables de entorno de proceso para pasar validaciones Fail-Fast en Program.cs
             Environment.SetEnvironmentVariable("ConnectionStrings__PostgresConnection", DbFixture.PostgresConnectionString);
-            Environment.SetEnvironmentVariable("ConnectionStrings__RedisConnection", DbFixture.RedisConnectionString);
+            Environment.SetEnvironmentVariable("ConnectionStrings__RedisConnection", DbFixture.RedisConnectionString + ",allowAdmin=true");
             Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Testing");
         }
 
@@ -76,11 +76,24 @@ namespace IceBackend.IntegrationTests.Fixtures
         public IceBackend.Application.DTOs.WebhookEventDto? ValidateAndConstruct(string rawBody, string signatureHeader)
         {
             var stripeEvent = Stripe.EventUtility.ParseEvent(rawBody, throwOnApiVersionMismatch: false);
+            
+            var rawObjectJson = "{}";
+            try 
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(rawBody);
+                if (doc.RootElement.TryGetProperty("data", out var dataProp) && 
+                    dataProp.TryGetProperty("object", out var objectProp))
+                {
+                    rawObjectJson = objectProp.GetRawText();
+                }
+            }
+            catch { }
+
             return new IceBackend.Application.DTOs.WebhookEventDto
             {
                 EventId = stripeEvent.Id,
                 EventType = stripeEvent.Type,
-                DataObjectJson = System.Text.Json.JsonSerializer.Serialize(stripeEvent.Data.Object),
+                DataObjectJson = rawObjectJson,
                 Created = stripeEvent.Created
             };
         }

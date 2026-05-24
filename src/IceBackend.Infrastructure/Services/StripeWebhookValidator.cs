@@ -36,11 +36,25 @@ namespace IceBackend.Infrastructure.Services
                     _webhookSecret,
                     throwOnApiVersionMismatch: false);
 
+                // Evitar pérdida de propiedades en el mapeo estricto del SDK (Stripe.net).
+                // Extraemos el subnodo data.object directamente del JSON original y en texto plano.
+                var rawObjectJson = "{}";
+                try 
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(rawBody);
+                    if (doc.RootElement.TryGetProperty("data", out var dataProp) && 
+                        dataProp.TryGetProperty("object", out var objectProp))
+                    {
+                        rawObjectJson = objectProp.GetRawText();
+                    }
+                }
+                catch { }
+
                 return new WebhookEventDto
                 {
                     EventId = stripeEvent.Id,
                     EventType = stripeEvent.Type,
-                    DataObjectJson = stripeEvent.Data.RawObject?.ToString() ?? "{}",
+                    DataObjectJson = rawObjectJson,
                     Created = stripeEvent.Created
                 };
             }
