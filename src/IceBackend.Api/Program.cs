@@ -63,6 +63,30 @@ if (string.IsNullOrWhiteSpace(redisConn) || redisConn.Contains("YOUR_REDIS_CONNE
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddControllers();
+
+// Configure CORS policy from configuration
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string>()
+    ?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+    ?? [];
+
+if (allowedOrigins.Length == 0)
+{
+    Log.Warning("CORS: No allowed origins configured — all cross-origin requests will be blocked. Set CORS__AllowedOrigins or Cors:AllowedOrigins.");
+}
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("IcePolicy", policy =>
+    {
+        policy.WithOrigins(allowedOrigins)
+              .AllowCredentials()
+              .AllowAnyMethod()
+              .WithHeaders("Authorization", "Content-Type", "X-Session-Token");
+    });
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -158,6 +182,7 @@ app.UseHttpsRedirection();
 
 app.UseMiddleware<IceBackend.Api.Middleware.ClientContextMiddleware>();
 
+app.UseCors("IcePolicy");
 app.UseAuthentication();
 app.UseAuthorization();
 
