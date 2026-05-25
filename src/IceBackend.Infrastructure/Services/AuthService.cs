@@ -103,6 +103,9 @@ namespace IceBackend.Infrastructure.Services
                 }
             }
 
+            // Rotación de sesión: invalidar cualquier sesión previa en Redis antes de crear la nueva
+            await _sessionCache.RemoveSessionAsync(player.Id.ToString());
+
             // Generar token de sesión de forma segura en el servidor (nunca viene del cliente).
             var sessionToken = GenerateSecureToken();
 
@@ -111,6 +114,31 @@ namespace IceBackend.Infrastructure.Services
             await _sessionCache.SetSessionAsync(player.Id.ToString(), sessionToken, _sessionTtl);
 
             return (player, sessionToken);
+        }
+
+        public async Task<(Player Player, string SessionToken)> RegisterAndLoginAsync(string username, string password)
+        {
+            // Garantizar atomicidad en el registro mediante una transacción explícita
+            using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            try
+            {
+                var player = await RegisterIceAccountAsync(username, password);
+
+                // Rotación de sesión: invalidar cualquier sesión previa en Redis
+                await _sessionCache.RemoveSessionAsync(player.Id.ToString());
+
+                var sessionToken = GenerateSecureToken();
+                await _sessionCache.SetSessionAsync(player.Id.ToString(), sessionToken, _sessionTtl);
+
+                await transaction.CommitAsync();
+
+                return (player, sessionToken);
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         private static string GenerateSecureToken()

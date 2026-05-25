@@ -163,12 +163,12 @@ Tareas críticas para cerrar el ciclo de vida completo del usuario y los cosmét
 
 ### Registro y Autenticación
 
-21. - [ ] **Endpoint público de registro para cuentas ICE (username + password)**
+21. - [x] **Endpoint público de registro para cuentas ICE (username + password)**
       - **Prioridad**: Crítica
       - **Archivos afectados**: [NEW] `src/IceBackend.Api/Controllers/AuthController.cs`, `src/IceBackend.Application/UseCases/Auth/RegisterIceAccountUseCase.cs`
       - **Descripción**: Exponer `RegisterIceAccountAsync` de forma pública (`POST /api/v1/auth/register`). Recibe `{ username, password }`, valida unicidad, bcrypt hashing, crea `Player` con `UuidType.ICE`, inicia sesión automáticamente y devuelve `sessionToken`. Misma sesión en Redis que el resto de auth.
 
-22. - [ ] **Endpoint público de login para cuentas ICE**
+22. - [x] **Endpoint público de login para cuentas ICE**
       - **Prioridad**: Crítica
       - **Archivos afectados**: `AuthController.cs`
       - **Descripción**: `POST /api/v1/auth/login` con `{ username, password }`. Validación bcrypt (con soporte de re-hash transparente). Devuelve `sessionToken`. Si ya existe sesión activa para el jugador, invalida la anterior (rotación de token).
@@ -253,40 +253,34 @@ Tareas críticas para cerrar el ciclo de vida completo del usuario y los cosmét
 Tareas enfocadas en cerrar el ciclo de vida de los cosméticos existentes y limpiar inconsistencias acumuladas. Depende de la Fase 5 para tener sentido de negocio completo.
 
 ### Bugs Activos
-
-36. - [ ] **Diagnosticar y corregir error 500 en DevSeed**
-      - **Prioridad**: Alta (bloquea pruebas)
-      - **Archivos afectados**: `Program.cs`, `DevSeedController.cs`
-      - **Descripción**: El endpoint `/api/v1/dev/seed` retorna 500 interno sin visibilidad del error real. Posibles causas: `EnsureCreated()` que no completa correctamente, o la query `seedCosmeticIds.Contains(c.Id)` que EF Core no traduce al SQL. Diagnóstico: quitar `"Database"` de `SensitiveKeywords` en el middleware para ver la excepción.
-
-37. - [ ] **Agregar versiones cosméticas con hash al DevSeed**
+36. - [ ] **Agregar versiones cosméticas con hash al DevSeed**
       - **Prioridad**: Alta (desbloquea request-delivery)
       - **Archivos afectados**: `DevSeedController.cs`
       - **Descripción**: Crear 3 `CosmeticAssetVersion` con SHA256 deterministas para cada cosmético del seed. Esto permite probar el flujo completo: `seed → login → request-delivery → deliver`. Sin versiones, `GetCosmeticIdByHashAsync` siempre retorna null.
 
-38. - [ ] **Endpoint GET callback para OAuth desde navegador**
+37. - [ ] **Endpoint GET callback para OAuth desde navegador**
       - **Prioridad**: Media (testing)
       - **Archivos afectados**: `ExternalAuthController.cs`, `ExternalAuthService.cs`
       - **Descripción**: Agregar `GET /api/auth/external/google/callback` que reciba el redirect de Google directamente (sin launcher), muestre una página HTML con el sessionToken, o renderice un JSON. Permite probar OAuth local sin Electron.
 
 ### Deuda Técnica e Inconsistencias
 
-39. - [ ] **Unificar versionado de rutas en todos los controladores**
+38. - [ ] **Unificar versionado de rutas en todos los controladores**
       - **Prioridad**: Media
       - **Archivos afectados**: `WebhooksController.cs`, `ExternalAuthController.cs`
       - **Descripción**: `WebhooksController` usa `api/[controller]` (token replacement). `ExternalAuthController` usa `api/auth/external` (sin versión). Estandarizar a `api/v1/webhooks` y `api/v1/auth/external/...` para mantener consistencia con el resto.
 
-40. - [ ] **Agregar [Required] y validaciones a DTOs de entrada**
+39. - [ ] **Agregar [Required] y validaciones a DTOs de entrada**
       - **Prioridad**: Media
       - **Archivos afectados**: `AssetDeliveryController.cs` (`RequestDeliveryBody`), `InventoryController.cs` (`EquipRequest`, `UnequipRequest`), `ExternalAuthController.cs` (`ExternalCallbackRequest`)
       - **Descripción**: Varios DTOs carecen de `[Required]` o `[StringLength]`, lo que permite requests inválidas con valores por defecto (Guid.Empty, 0). Agregar data annotations para mejorar Swagger docs y validación temprana.
 
-41. - [ ] **Corregir logging de Serilog en Docker (stdout no visible)**
+40. - [ ] **Corregir logging de Serilog en Docker (stdout no visible)**
       - **Prioridad**: Media
       - **Archivos afectados**: `Program.cs`, `appsettings.json`
       - **Descripción**: Las trazas de Serilog (`ILogger<T>`) no aparecen en `docker logs ice_api`. Solo se ve el bootstrap logger. Revisar configuración de sinks y flushing para que los logs estructurados sean visibles en stdout del contenedor.
 
-42. - [ ] **Agregar `[JsonConverter(typeof(JsonStringEnumConverter))]` a enums de DTOs**
+41. - [ ] **Agregar `[JsonConverter(typeof(JsonStringEnumConverter))]` a enums de DTOs**
       - **Prioridad**: Baja
       - **Archivos afectados**: `InventoryController.cs`, enums compartidos
       - **Descripción**: `CosmeticType` en `EquipRequest` se serializa como entero por defecto. Configurar `JsonStringEnumConverter` global o por propiedad para que Swagger muestre nombres legibles y el cliente pueda enviar `"hat"` en vez de `0`.
