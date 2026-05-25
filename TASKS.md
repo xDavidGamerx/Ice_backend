@@ -128,7 +128,7 @@ Tareas orientadas a hacer el proyecto portable (Docker) y demostrable (datos de 
      - **Archivos afectados**: [NEW] `src/IceBackend.Api/Dockerfile`, `docker-compose.yml`
      - **Descripción**: Crear `Dockerfile` multi-stage en `src/IceBackend.Api/` y agregar el servicio `api` al `docker-compose.yml` con healthchecks en postgres/redis. Objetivo: `docker-compose up --build` levanta API + Postgres + Redis automáticamente.
 
-17. - [ ] **Endpoint `/api/v1/dev/seed` para datos de prueba**
+17. - [x] **Endpoint `/api/v1/dev/seed` para datos de prueba**
      - **Prioridad**: Alta (para demo)
      - **Archivos afectados**: [NEW] `src/IceBackend.Api/Controllers/DevSeedController.cs`
      - **Descripción**: Crear endpoint idempotente que siembra 2 jugadores (1 con ICE+ activo y 3 meses acumulados, 1 sin suscripción), 3 cosméticos demo y 2 ownerships. Protegido con guardia de entorno `Development`.
