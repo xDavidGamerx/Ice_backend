@@ -22,7 +22,7 @@ namespace IceBackend.Infrastructure.Queries
             var cosmetic = await _dbContext.CosmeticAssets
                 .AsNoTracking()
                 .Include(c => c.Versions)
-                .FirstOrDefaultAsync(c => c.Id.Value == id);
+                .FirstOrDefaultAsync(c => (Guid)c.Id == id);
 
             if (cosmetic == null)
             {

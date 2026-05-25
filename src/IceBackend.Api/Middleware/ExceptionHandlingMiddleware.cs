@@ -16,7 +16,7 @@ namespace IceBackend.Api.Middleware
         private readonly ILogger<ExceptionHandlingMiddleware> _logger;
         private readonly IHostEnvironment _env;
 
-        private static readonly string[] SensitiveKeywords = new[] { "ConnectionString", "Database", "Password", "Secret" };
+        private static readonly string[] SensitiveKeywords = new[] { "ConnectionString", "Password", "Secret" };
 
         public ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger, IHostEnvironment env)
         {

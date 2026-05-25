@@ -169,6 +169,27 @@ builder.Services.AddHealthChecks()
 
 var app = builder.Build();
 
+// Auto-create database schema on startup (EnsureCreated crea todo desde el modelo actual)
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        try
+        {
+            if (db.Database.EnsureCreated())
+                Log.Information("Database schema created successfully.");
+            else
+                Log.Information("Database schema already exists.");
+        }
+        catch (Exception ex)
+        {
+            Log.Fatal(ex, "Failed to create database schema on startup.");
+            throw; // Fail-Fast: la app no debe arrancar sin BD
+        }
+    }
+}
+
 // Configure the HTTP request pipeline.
 app.UseMiddleware<IceBackend.Api.Middleware.ExceptionHandlingMiddleware>();
 

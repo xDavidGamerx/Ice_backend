@@ -2,6 +2,23 @@
 
 Este archivo registra las modificaciones importantes, correcciones de errores y nuevas funcionalidades implementadas en el proyecto, junto con su justificación técnica.
 
+## [2026-05-25] - Diagnóstico y Estabilización de DevSeed y Persistencia de Suscripciones (Task 19 & 17)
+
+### Añadido
+- **Fail-Fast en Startup** (`src/IceBackend.Api/Program.cs`): Envoltorio try/catch con `Log.Fatal` y `throw` en `EnsureCreated()` para detener la aplicación ruidosamente si la base de datos no se inicializa al arranque.
+
+### Cambiado
+- **Idempotencia de DevSeed** (`src/IceBackend.Api/Controllers/DevSeedController.cs`): Se flexibilizó el control de duplicados del endpoint `/api/v1/dev/seed` para que verifique únicamente si los cosméticos sembrados ya existen, en lugar de bloquear la operación si hay cualquier otro jugador registrado.
+
+### Corregido
+- **Aislamiento de Base de Datos en Tests** (`src/IceBackend.Api/Program.cs`): Se desactivó el llamado a `EnsureCreated()` para el entorno `Testing`, permitiendo que la suite de pruebas de integración controle el esquema completamente mediante `MigrateAsync()` sin colisionar con tablas creadas previamente de forma implícita.
+- **Carga de Suscripciones en EF Core** (`src/IceBackend.Infrastructure/Data/Configurations/PlayerSubscriptionConfiguration.cs`): Se configuró la clave primaria `Id` de `PlayerSubscription` con `.ValueGeneratedNever()` para notificar a EF Core que el ID es generado en el dominio, previniendo excepciones `DbUpdateConcurrencyException` al sembrar datos.
+- **Traducción LINQ en Consultas de Cosméticos** (`src/IceBackend.Infrastructure/Queries/CosmeticAssetQueryService.cs`): Ajuste de casting a `Guid` en la comparación de `c.Id` en `FirstOrDefaultAsync()` para evitar errores de traducción de LINQ en EF Core.
+- **Visibilidad de Excepciones** (`src/IceBackend.Api/Middleware/ExceptionHandlingMiddleware.cs`): Se retiró `"Database"` de las palabras clave sensibles redactadas en desarrollo para permitir diagnosticar fallas de base de datos directamente en el body de `ProblemDetails`.
+
+### Técnico
+- **Timeout Resiliente de Testcontainers** (`tests/IceBackend.IntegrationTests/Fixtures/PostgreSqlFixture.cs`): Incrementado el timeout de Polly de 30 a 90 segundos para evitar fallas por `TimeoutRejectedException` cuando el daemon de Docker local opera bajo carga pesada.
+
 ## [2026-05-24] - Portabilidad, Dockerización, Endpoint DevSeed, Suscripciones, Configuración CORS y README Final (Tasks 14, 16, 17, 18, 20)
 
 ### Añadido
