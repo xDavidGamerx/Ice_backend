@@ -4,7 +4,6 @@ CREATE TABLE players (
     "Username" text NOT NULL,
     "UuidType" character varying(10) NOT NULL,
     "PasswordHash" text NULL,
-    "SessionHash" text NULL,
     "CreatedAt" timestamp with time zone NOT NULL,
     
     -- Suscripción (ICE+)
@@ -71,15 +70,15 @@ CREATE INDEX "IX_cosmetic_asset_versions_Sha256Hash" ON cosmetic_asset_versions 
 -- 5. Propiedad de Cosméticos (player_cosmetic_ownership)
 CREATE TABLE player_cosmetic_ownership (
     "PlayerId" uuid NOT NULL,
-    "CosmeticId" uuid NOT NULL,
+    "cosmetic_asset_internal_id" integer NOT NULL,
     "ProviderPaymentId" text NOT NULL,
     "AcquiredAt" timestamp with time zone NOT NULL,
     
-    CONSTRAINT "PK_player_cosmetic_ownership" PRIMARY KEY ("PlayerId", "CosmeticId"),
+    CONSTRAINT "PK_player_cosmetic_ownership" PRIMARY KEY ("PlayerId", "cosmetic_asset_internal_id"),
     CONSTRAINT "FK_player_cosmetic_ownership_players_PlayerId" FOREIGN KEY ("PlayerId") REFERENCES players ("Id") ON DELETE CASCADE,
-    CONSTRAINT "FK_player_cosmetic_ownership_cosmetic_assets_CosmeticId" FOREIGN KEY ("CosmeticId") REFERENCES cosmetic_assets ("id") ON DELETE RESTRICT
+    CONSTRAINT "FK_player_cosmetic_ownership_cosmetic_assets_cosmetic_asset_internal_id" FOREIGN KEY ("cosmetic_asset_internal_id") REFERENCES cosmetic_assets ("internal_id") ON DELETE RESTRICT
 );
-CREATE INDEX "IX_player_cosmetic_ownership_CosmeticId" ON player_cosmetic_ownership ("CosmeticId");
+CREATE INDEX "IX_player_cosmetic_ownership_cosmetic_asset_internal_id" ON player_cosmetic_ownership ("cosmetic_asset_internal_id");
 
 -- 6. Historial de Autenticación Externa (player_external_auth)
 CREATE TABLE player_external_auth (
