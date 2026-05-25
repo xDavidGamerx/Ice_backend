@@ -2,7 +2,7 @@
 
 Este archivo registra las modificaciones importantes, correcciones de errores y nuevas funcionalidades implementadas en el proyecto, junto con su justificación técnica.
 
-## [2026-05-24] - Portabilidad, Dockerización, Endpoint DevSeed, Suscripciones y Configuración CORS (Tasks 14, 16, 17, 18)
+## [2026-05-24] - Portabilidad, Dockerización, Endpoint DevSeed, Suscripciones, Configuración CORS y README Final (Tasks 14, 16, 17, 18, 20)
 
 ### Añadido
 - **Dockerfile multi-stage** (`src/IceBackend.Api/Dockerfile`): Build con SDK 8.0 y runtime ASP.NET 8.0 con cache de capas para NuGet restore.
@@ -13,6 +13,7 @@ Este archivo registra las modificaciones importantes, correcciones de errores y 
 - **Suite de pruebas de integración para suscripciones** (`tests/IceBackend.IntegrationTests/Subscription/SubscriptionTests.cs`): 3 nuevas pruebas automatizadas certificando el comportamiento del endpoint en escenarios de suscripción activa (con beneficios), sin suscripción (beneficios nulos) y acceso no autenticado (401 Unauthorized).
 - **Configuración de CORS** (`src/IceBackend.Api/Program.cs` y `appsettings.json`): Registrada la política `"IcePolicy"` con `WithOrigins` dinámicos desde configuración, `AllowCredentials()` requerido para la autenticación de cabeceras, y restricciones explícitas de headers (`Authorization`, `Content-Type`, `X-Session-Token`).
 - **Pruebas de integración de CORS** (`tests/IceBackend.IntegrationTests/Cors/CorsTests.cs`): 3 nuevas pruebas automatizadas certificando el comportamiento de las peticiones preflight (OPTIONS) y la correcta presencia de cabeceras CORS (`Access-Control-Allow-Origin`, `Access-Control-Allow-Credentials`) frente a orígenes permitidos y su ausencia en orígenes no listados.
+- **README final** (`README.md`): Documentación completa del proyecto incluyendo características, stack tecnológico, quick start local, despliegue en servidor real con Docker Compose + Nginx, tabla de endpoints, variables de entorno, estructura del proyecto, tests, auditoría de logs y guía de contribución.
 
 ### Cambiado
 - **`docker-compose.yml`**: Agregados healthchecks a servicios `postgres` y `redis`. Agregado servicio `api` con mapeo `5000:8080`.

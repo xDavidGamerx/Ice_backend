@@ -142,3 +142,8 @@ Tareas orientadas a hacer el proyecto portable (Docker) y demostrable (datos de 
       - **Prioridad**: Alta (bloquea validación de webhooks)
       - **Archivos afectados**: `tests/IceBackend.IntegrationTests/Fixtures/StripeSignatureHelper.cs`
       - **Descripción**: `BuildStripePayload()` genera JSON simplificado incompatible con la versión actual de `Stripe.net`. El `EventConverter` interno espera campos adicionales del estándar (discriminador `"object"`, estructura anidada completa), y al no encontrarlos lanza `NullReferenceException` al deserializar. Reestructurar el payload mock para que `EventUtility.ParseEvent()`/`ConstructEvent()` no falle, manteniendo los datos mínimos que necesita la lógica de negocio (`customer`, `subscription`, `billing_reason`).
+
+20. - [x] **README final con documentacion de despliegue**
+      - **Prioridad**: Alta (para demo)
+      - **Archivos afectados**: `README.md`
+      - **Descripción**: Reestructurar README.md como carta de presentación del proyecto, incluyendo: descripción, características, stack tecnológico, quick start local, despliegue en servidor real con Docker Compose + nginx, tabla de endpoints, variables de entorno, estructura del proyecto, tests, guía de contribución y licencia. Basado en mejores prácticas de README para APIs REST.
