@@ -133,7 +133,7 @@ Tareas orientadas a hacer el proyecto portable (Docker) y demostrable (datos de 
      - **Archivos afectados**: [NEW] `src/IceBackend.Api/Controllers/DevSeedController.cs`
      - **Descripción**: Crear endpoint idempotente que siembra 2 jugadores (1 con ICE+ activo y 3 meses acumulados, 1 sin suscripción), 3 cosméticos demo y 2 ownerships. Protegido con guardia de entorno `Development`.
 
-18. - [ ] **Endpoint `GET /api/v1/subscription/me`**
+18. - [x] **Endpoint `GET /api/v1/subscription/me`**
      - **Prioridad**: Media (para demo)
      - **Archivos afectados**: [NEW] `src/IceBackend.Api/Controllers/SubscriptionController.cs`
      - **Descripción**: Endpoint autenticado que retorna `{ isActive, accumulatedMonths, benefits: [...], stripeSubscriptionId, expiresAt }`. Usa `GetIcePlusBenefitsAsync` + consulta a DB. Visible desde Swagger.
