@@ -10,16 +10,16 @@ namespace IceBackend.Api.Controllers
     public class WebhooksController : ControllerBase
     {
         private readonly IStripeWebhookValidator _validator;
-        private readonly IServiceProvider _serviceProvider;
+        private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<WebhooksController> _logger;
 
         public WebhooksController(
             IStripeWebhookValidator validator,
-            IServiceProvider serviceProvider,
+            IServiceScopeFactory scopeFactory,
             ILogger<WebhooksController> logger)
         {
             _validator = validator;
-            _serviceProvider = serviceProvider;
+            _scopeFactory = scopeFactory;
             _logger = logger;
         }
 
@@ -62,17 +62,15 @@ namespace IceBackend.Api.Controllers
             // Esto evita que Stripe agote su timeout (30s) y reintente el evento.
             _ = Task.Run(async () =>
             {
-                using var scope = _serviceProvider.CreateScope();
+                using var scope = _scopeFactory.CreateScope();
                 var webhookService = scope.ServiceProvider.GetRequiredService<IStripeWebhookService>();
                 var backgroundLogger = scope.ServiceProvider.GetRequiredService<ILogger<WebhooksController>>();
-                
                 try
                 {
                     await webhookService.HandleEventAsync(webhookEvent);
                 }
                 catch (Exception ex)
                 {
-                    // El error queda logueado; Stripe reintentará si necesario.
                     backgroundLogger.LogError(ex, "Background webhook processing failed for EventId: {EventId}", webhookEvent.EventId);
                 }
             });

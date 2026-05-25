@@ -93,8 +93,8 @@ namespace IceBackend.Infrastructure.Services
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                // Quitar la flag de Redis para permitir reintento legítimo de Stripe.
-                await _sessionCache.RemoveSessionAsync(idempotencyKey);
+                // ELIMINADO para prevenir enmascaramiento de excepciones:
+                // await _sessionCache.RemoveSessionAsync(idempotencyKey);
                 _logger.LogError(ex, "Error processing webhook. EventId: {EventId}", webhookEvent.EventId);
                 throw;
             }
@@ -157,7 +157,7 @@ namespace IceBackend.Infrastructure.Services
 
             // Registrar ID afectado para la purga post-commit
             affectedPlayers.Add(player.Id);
-            
+
             _logger.LogInformation("Invoice paid processed and player scheduled for cache invalidation: {PlayerId}", player.Id);
         }
 
@@ -253,7 +253,6 @@ namespace IceBackend.Infrastructure.Services
         {
             if (string.IsNullOrEmpty(customerId)) return null;
 
-            // El customerId de Stripe se almacena en ExternalAuth con Provider = "stripe".
             return await _dbContext.Players
                 .Include(p => p.ExternalAuths)
                 .Include(p => p.Subscription)

@@ -67,7 +67,11 @@ namespace IceBackend.IntegrationTests.Webhooks
             };
             request.Headers.Add("Stripe-Signature", "t=123,v1=test_signature");
             var response = await _client.SendAsync(request);
-            response.EnsureSuccessStatusCode();
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                throw new HttpRequestException($"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase}). Body: {body}");
+            }
 
             // CRÍTICO: Dado que el WebhooksController delega la persistencia a un Task.Run()
             // en background para retornar 200 OK rápido, debemos pausar el hilo del test
@@ -250,6 +254,7 @@ namespace IceBackend.IntegrationTests.Webhooks
             _trackedKeys.AddRange(new RedisKey[] { $"subscription:player:{playerId}", $"player:sessions:{playerId}", $"inventory:player:{playerId}" });
             var player = new Player(playerId, "test_user", UuidType.ICE, null);
             player.AddExternalAuth(new ExternalAuth(Guid.NewGuid(), playerId, AuthProvider.STRIPE, "cus_test_006", null));
+            player.AssignIcePlusSubscription("sub_old", false, 30, DateTime.UtcNow.AddDays(-40));
             _db.Players.Add(player);
             await _db.SaveChangesAsync();
 
@@ -258,15 +263,19 @@ namespace IceBackend.IntegrationTests.Webhooks
             
             // Act
             await SendWebhookAsync(payload);
-            await Task.Delay(10000); // Wait long enough for the first to complete completely.
 
-            // Dispatch exact same duplicate
-            // await SendWebhookAsync(payload);
-            // await Task.Delay(10000);
-            _db.ChangeTracker.Clear();
-            var eventCount = await _db.PaymentEvents.CountAsync(e => e.ProviderEventId == $"evt_test_{explicitEventId}");
-            var unresolvedCount = await _db.UnresolvedPaymentEvents.CountAsync(e => e.ProviderEventId == $"evt_test_{explicitEventId}");
-            Assert.Equal(1, eventCount + unresolvedCount); // Idempotency check: exactly 1 event should be saved regardless of resolution status
+            // Active Polling Wait for background task to persist the event
+            int totalEvents = 0;
+            for (int i = 0; i < 60; i++)
+            {
+                _db.ChangeTracker.Clear();
+                var eventCount = await _db.PaymentEvents.CountAsync(e => e.ProviderEventId == $"evt_test_{explicitEventId}");
+                var unresolvedCount = await _db.UnresolvedPaymentEvents.CountAsync(e => e.ProviderEventId == $"evt_test_{explicitEventId}");
+                totalEvents = eventCount + unresolvedCount;
+                if (totalEvents >= 1) break;
+                await Task.Delay(500);
+            }
+            Assert.Equal(1, totalEvents);
         }
 
         [Fact]
