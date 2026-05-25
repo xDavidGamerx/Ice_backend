@@ -107,7 +107,7 @@ Aquí se consolidan y detallan las tareas pendientes del proyecto (incluyendo ne
      - **Archivos afectados**: `src/IceBackend.Domain/Entities/PlayerSubscription.cs`, `src/IceBackend.Infrastructure/Data/ApplicationDbContext.cs`, `docs/database.sql`
      - **Descripción**: Diseñar e implementar el modelo de datos para la suscripción ICE+ (estilo Lunar+), registrando el estado activo, expiración, renovación y un contador acumulativo de meses para los iconos evolutivos, persistiendo los beneficios y cargándolos en caché (Redis) mediante Cache-Aside.
 
-14. - [ ] **Configurar CORS (Cross-Origin Resource Sharing)**
+14. - [x] **Configurar CORS (Cross-Origin Resource Sharing)**
      - **Prioridad**: Media
      - **Archivos afectados**: `src/IceBackend.Api/Program.cs`, `appsettings.json`
      - **Descripción**: Registrar y configurar políticas de CORS en el pipeline de ASP.NET Core que permitan al launcher (origen del cliente Electron) consumir la API, y a `localhost` para desarrollo. Debe ser restrictivo: solo orígenes explícitamente listados, sin permitir `AllowAnyOrigin()` en producción.

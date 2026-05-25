@@ -2,7 +2,7 @@
 
 Este archivo registra las modificaciones importantes, correcciones de errores y nuevas funcionalidades implementadas en el proyecto, junto con su justificación técnica.
 
-## [2026-05-24] - Portabilidad, Dockerización, Endpoint DevSeed y Endpoint de Suscripciones (Tasks 16, 17, 18)
+## [2026-05-24] - Portabilidad, Dockerización, Endpoint DevSeed, Suscripciones y Configuración CORS (Tasks 14, 16, 17, 18)
 
 ### Añadido
 - **Dockerfile multi-stage** (`src/IceBackend.Api/Dockerfile`): Build con SDK 8.0 y runtime ASP.NET 8.0 con cache de capas para NuGet restore.
@@ -11,6 +11,8 @@ Este archivo registra las modificaciones importantes, correcciones de errores y 
 - **`DevSeedController`** (`src/IceBackend.Api/Controllers/DevSeedController.cs`): Controlador y endpoint seed `/api/v1/dev/seed` exclusivo de `Development` y oculto en Swagger. Permite sembrar datos de prueba deterministas (jugadores, cosméticos, ownerships y suscripción ICE+) de forma idempotente.
 - **`SubscriptionController`** (`src/IceBackend.Api/Controllers/SubscriptionController.cs`): Implementado endpoint `GET /api/v1/subscription/me` autenticado con `[Authorize]` para consultar el estado actual de la suscripción del jugador en base de datos PostgreSQL e inyectar los beneficios calculados en caché Redis (Cache-Aside).
 - **Suite de pruebas de integración para suscripciones** (`tests/IceBackend.IntegrationTests/Subscription/SubscriptionTests.cs`): 3 nuevas pruebas automatizadas certificando el comportamiento del endpoint en escenarios de suscripción activa (con beneficios), sin suscripción (beneficios nulos) y acceso no autenticado (401 Unauthorized).
+- **Configuración de CORS** (`src/IceBackend.Api/Program.cs` y `appsettings.json`): Registrada la política `"IcePolicy"` con `WithOrigins` dinámicos desde configuración, `AllowCredentials()` requerido para la autenticación de cabeceras, y restricciones explícitas de headers (`Authorization`, `Content-Type`, `X-Session-Token`).
+- **Pruebas de integración de CORS** (`tests/IceBackend.IntegrationTests/Cors/CorsTests.cs`): 3 nuevas pruebas automatizadas certificando el comportamiento de las peticiones preflight (OPTIONS) y la correcta presencia de cabeceras CORS (`Access-Control-Allow-Origin`, `Access-Control-Allow-Credentials`) frente a orígenes permitidos y su ausencia en orígenes no listados.
 
 ### Cambiado
 - **`docker-compose.yml`**: Agregados healthchecks a servicios `postgres` y `redis`. Agregado servicio `api` con mapeo `5000:8080`.
@@ -22,7 +24,7 @@ Este archivo registra las modificaciones importantes, correcciones de errores y 
 
 ### Técnico
 - Principio DRY aplicado a la configuración: Stripe, OAuth, CDN y Auth viven exclusivamente en `.env` (gitignorado). `docker-compose.yml` solo define las 2 rutas de red que cambian dentro del contenedor.
-- `dotnet build`: 0 errores. Correcciones post-dockerización de caché de sesión y Testcontainers. Integración completa del seed de desarrollo y del endpoint de consulta de beneficios de suscripción.
+- `dotnet build`: 0 errores. Correcciones post-dockerización de caché de sesión y Testcontainers. Integración completa del seed de desarrollo, de la consulta de beneficios de suscripción y de las políticas seguras de CORS.
 
 ## [2026-05-23] - Testcontainers E2E (Task 11), Mitigación de Caché (Task 15) y Logs (Task 10)
 
