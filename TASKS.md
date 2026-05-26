@@ -178,7 +178,7 @@ Tareas críticas para cerrar el ciclo de vida completo del usuario y los cosmét
       - **Archivos afectados**: `ExternalAuthService.cs`, `Player.cs`, `UuidType.cs`
       - **Descripción**: Al registrar/login con Microsoft, llamar a la API de Mojang (`GET https://api.minecraftservices.com/entitlements/mcstore`) con el token de Microsoft para verificar si el usuario posee Minecraft Java Edition. Agregar campo `IsMcPremium` a `Player`. Si es `true`, el launcher puede habilitar funcionalidades exclusivas. Usuarios Google/ICE siempre `false`.
 
-24. - [ ] **Endpoint de logout (invalidación de sesión)**
+24. - [x] **Endpoint de logout (invalidación de sesión)**
       - **Prioridad**: Alta
       - **Archivos afectados**: `AuthController.cs`, `ISessionCache.cs`, `RedisSessionCache.cs`
       - **Descripción**: `POST /api/v1/auth/logout` — elimina la sesión actual de Redis. Requiere `[Authorize]` (Bearer token). Previene reuso del token.

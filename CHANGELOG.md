@@ -2,13 +2,15 @@
 
 Este archivo registra las modificaciones importantes, correcciones de errores y nuevas funcionalidades implementadas en el proyecto, junto con su justificación técnica.
 
-## [2026-05-25] - Estabilización de DevSeed, Registro y Login Público de Cuentas ICE (Tasks 17, 19, 21, 22)
+## [2026-05-25] - Estabilización de DevSeed, Registro, Login y Logout Público de Cuentas ICE (Tasks 17, 19, 21, 22, 24)
 
 ### Añadido
+- **Endpoint de Logout Público** (`src/IceBackend.Api/Controllers/AuthController.cs`): Implementado endpoint `POST /api/v1/auth/logout` protegido por el atributo `[Authorize]` que invalida y elimina la sesión activa del jugador.
 - **Controlador de Autenticación Público** (`src/IceBackend.Api/Controllers/AuthController.cs`): Implementado `AuthController` con endpoints `POST /api/v1/auth/register` (registro y login atómico automático) y `POST /api/v1/auth/login` (login local clásico), ambos expuestos a Swagger y dotados de DTOs inline con validación `[Required]` y restricciones de longitud/caracteres.
 - **Fail-Fast en Startup** (`src/IceBackend.Api/Program.cs`): Envoltorio try/catch con `Log.Fatal` y `throw` al arrancar para detener la aplicación ruidosamente si la base de datos no se inicializa o migra.
 
 ### Cambiado
+- **Borrado Masivo por Lotes en Redis** (`src/IceBackend.Infrastructure/Services/RedisSessionCache.cs`): Se optimizó `RemoveSessionAsync` consolidando la invalidación de las 5-7 claves de Redis (mapeo directo, inverso, sesión dev, inventario cache, empty flags y suscripciones) en un único comando atómico masivo de eliminación (`db.KeyDeleteAsync(keysToDelete)`), reduciendo roundtrips de red y optimizando la memoria.
 - **Migración Automática en Startup** (`src/IceBackend.Api/Program.cs`): Se sustituyó `EnsureCreated()` por `db.Database.Migrate()` en el arranque normal (fuera de Testing), garantizando que las tablas se creen siguiendo la historia de migraciones en `__EFMigrationsHistory` y previniendo colisiones de esquema persistentes.
 - **Idempotencia de DevSeed** (`src/IceBackend.Api/Controllers/DevSeedController.cs`): Se flexibilizó el control de duplicados del endpoint `/api/v1/dev/seed` para que verifique únicamente si los cosméticos sembrados ya existen, en lugar de bloquear la operación si hay cualquier otro jugador registrado.
 

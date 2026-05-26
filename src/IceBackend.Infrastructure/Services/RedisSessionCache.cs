@@ -90,17 +90,39 @@ namespace IceBackend.Infrastructure.Services
 
         public async Task RemoveSessionAsync(string playerId)
         {
-            // Limpiar sesión real
-            var sessionToken = await GetSessionAsync(playerId);
-            await _cache.RemoveAsync(BuildKey(playerId));
-            if (sessionToken != null) await _cache.RemoveAsync($"{TokenPrefix}{sessionToken}");
+            var db = _redis.GetDatabase();
+            var sessionKey = BuildKey(playerId);
+            var devSessionKey = $"{DevKeyPrefix}{playerId}";
 
-            // Limpiar sesión de desarrollo si existe
-            await RemoveDevSessionAsync(playerId);
+            // 1. Leer los tokens de sesión real y desarrollo concurrentemente
+            var sessionTokenTask = db.StringGetAsync(sessionKey);
+            var devSessionTokenTask = db.StringGetAsync(devSessionKey);
+            await Task.WhenAll(sessionTokenTask, devSessionTokenTask);
 
-            var playerGuid = Guid.Parse(playerId);
-            await InvalidatePlayerCosmeticsAsync(playerGuid);
-            await InvalidatePlayerSubscriptionAsync(playerGuid);
+            var sessionToken = sessionTokenTask.Result;
+            var devSessionToken = devSessionTokenTask.Result;
+
+            // 2. Reunir todas las llaves a invalidar en un lote único
+            var keysToDelete = new List<RedisKey>
+            {
+                sessionKey,
+                devSessionKey,
+                $"{InventoryPrefix}{playerId}",
+                $"{InventoryPrefix}{playerId}:empty_flag",
+                $"{SubscriptionPrefix}{playerId}"
+            };
+
+            if (sessionToken.HasValue)
+            {
+                keysToDelete.Add($"{TokenPrefix}{sessionToken}");
+            }
+            if (devSessionToken.HasValue)
+            {
+                keysToDelete.Add($"{DevTokenPrefix}{devSessionToken}");
+            }
+
+            // 3. Ejecutar borrado masivo por lotes en Redis (eficiente y atómico)
+            await db.KeyDeleteAsync(keysToDelete.ToArray());
         }
 
         public async Task<string?> GetPlayerIdBySessionAsync(string sessionToken)

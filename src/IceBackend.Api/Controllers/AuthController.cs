@@ -1,24 +1,28 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using IceBackend.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace IceBackend.Api.Controllers
 {
     /// <summary>
     /// Controlador público de autenticación para cuentas locales ICE.
-    /// Permite el registro de usuarios y el inicio de sesión nativo con contraseñas seguras BCrypt.
+    /// Permite el registro de usuarios, el inicio de sesión nativo y el cierre de sesión.
     /// </summary>
     [ApiController]
     [Route("api/v1/auth")]
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
+        private readonly ISessionCache _sessionCache;
 
-        public AuthController(IAuthService authService)
+        public AuthController(IAuthService authService, ISessionCache sessionCache)
         {
             _authService = authService;
+            _sessionCache = sessionCache;
         }
 
         /// <summary>
@@ -67,6 +71,21 @@ namespace IceBackend.Api.Controllers
                 username = result.Value.Player.Username,
                 sessionToken = result.Value.SessionToken
             });
+        }
+
+        /// <summary>
+        /// Cierra la sesión activa del jugador autenticado, invalidando su token.
+        /// </summary>
+        [HttpPost("logout")]
+        [Authorize]
+        public async Task<IActionResult> Logout()
+        {
+            var playerIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (playerIdClaim == null || !Guid.TryParse(playerIdClaim.Value, out var playerId))
+                return Unauthorized();
+
+            await _sessionCache.RemoveSessionAsync(playerId.ToString());
+            return Ok(new { message = "Session closed successfully." });
         }
     }
 
