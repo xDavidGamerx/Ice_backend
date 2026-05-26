@@ -19,6 +19,8 @@ namespace IceBackend.Infrastructure.Services
     /// </summary>
     public class RedisSessionCache : ISessionCache
     {
+        // Prefijo configurado en AddStackExchangeRedisCache(InstanceName = "IceLauncher:")
+        private const string RedisInstancePrefix = "IceLauncher:";
         private const string KeyPrefix = "session:player:";
         private const string TokenPrefix = "session:token:";
         private const string DevKeyPrefix = "dev_session:player:";
@@ -91,34 +93,27 @@ namespace IceBackend.Infrastructure.Services
         public async Task RemoveSessionAsync(string playerId)
         {
             var db = _redis.GetDatabase();
-            var sessionKey = BuildKey(playerId);
-            var devSessionKey = $"{DevKeyPrefix}{playerId}";
 
-            // 1. Leer los tokens de sesión real y desarrollo concurrentemente
-            var sessionTokenTask = db.StringGetAsync(sessionKey);
-            var devSessionTokenTask = db.StringGetAsync(devSessionKey);
-            await Task.WhenAll(sessionTokenTask, devSessionTokenTask);
-
-            var sessionToken = sessionTokenTask.Result;
-            var devSessionToken = devSessionTokenTask.Result;
+            // 1. Leer token via IDistributedCache (respeta prefijo y formato HASH)
+            var sessionToken = await GetSessionAsync(playerId);
 
             // 2. Reunir todas las llaves a invalidar en un lote único
+            //    Nota: IDistributedCache almacena con RedisInstancePrefix y formato HASH.
+            //    Para borrar usamos KeyDeleteAsync directo con el nombre completo de la key.
             var keysToDelete = new List<RedisKey>
             {
-                sessionKey,
-                devSessionKey,
+                $"{RedisInstancePrefix}{KeyPrefix}{playerId}",
+                $"{RedisInstancePrefix}{DevKeyPrefix}{playerId}",
                 $"{InventoryPrefix}{playerId}",
                 $"{InventoryPrefix}{playerId}:empty_flag",
-                $"{SubscriptionPrefix}{playerId}"
+                $"{SubscriptionPrefix}{playerId}",
+                $"player:sessions:{playerId}"
             };
 
-            if (sessionToken.HasValue)
+            if (sessionToken != null)
             {
-                keysToDelete.Add($"{TokenPrefix}{sessionToken}");
-            }
-            if (devSessionToken.HasValue)
-            {
-                keysToDelete.Add($"{DevTokenPrefix}{devSessionToken}");
+                keysToDelete.Add($"{RedisInstancePrefix}{TokenPrefix}{sessionToken}");
+                keysToDelete.Add($"{RedisInstancePrefix}{DevTokenPrefix}{sessionToken}");
             }
 
             // 3. Ejecutar borrado masivo por lotes en Redis (eficiente y atómico)
@@ -224,13 +219,20 @@ namespace IceBackend.Infrastructure.Services
 
         public async Task RemoveDevSessionAsync(string playerId)
         {
+            var db = _redis.GetDatabase();
+            var keysToDelete = new List<RedisKey>
+            {
+                $"{RedisInstancePrefix}{DevKeyPrefix}{playerId}"
+            };
+
             var tokenBytes = await _cache.GetAsync($"{DevKeyPrefix}{playerId}");
             if (tokenBytes != null)
             {
                 var token = Encoding.UTF8.GetString(tokenBytes);
-                await _cache.RemoveAsync($"{DevTokenPrefix}{token}");
+                keysToDelete.Add($"{RedisInstancePrefix}{DevTokenPrefix}{token}");
             }
-            await _cache.RemoveAsync($"{DevKeyPrefix}{playerId}");
+
+            await db.KeyDeleteAsync(keysToDelete.ToArray());
         }
 
         public async Task PurgePlayerSessionsAsync(Guid playerId)
@@ -241,7 +243,7 @@ namespace IceBackend.Infrastructure.Services
 
             await db.ScriptEvaluateAsync(PurgeLuaScript.ExecutableScript,
                 keys: new RedisKey[] { sessionsIndexKey },
-                values: new RedisValue[] { nowUnix, TokenPrefix });
+                values: new RedisValue[] { nowUnix, $"{RedisInstancePrefix}{TokenPrefix}" });
 
             await InvalidatePlayerSubscriptionAsync(playerId);
         }
