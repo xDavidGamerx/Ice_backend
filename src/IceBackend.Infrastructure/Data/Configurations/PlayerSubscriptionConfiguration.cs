@@ -13,7 +13,8 @@ namespace IceBackend.Infrastructure.Data.Configurations
             builder.HasKey(e => e.Id);
 
             builder.Property(e => e.Id)
-                   .HasColumnType("uuid");
+                   .HasColumnType("uuid")
+                   .ValueGeneratedNever();
 
             builder.Property(e => e.PlayerId)
                    .HasConversion(id => id.Value, value => new PlayerId(value))

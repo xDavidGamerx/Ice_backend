@@ -19,6 +19,8 @@ namespace IceBackend.Infrastructure.Services
     /// </summary>
     public class RedisSessionCache : ISessionCache
     {
+        // Prefijo configurado en AddStackExchangeRedisCache(InstanceName = "IceLauncher:")
+        private const string RedisInstancePrefix = "IceLauncher:";
         private const string KeyPrefix = "session:player:";
         private const string TokenPrefix = "session:token:";
         private const string DevKeyPrefix = "dev_session:player:";
@@ -90,17 +92,32 @@ namespace IceBackend.Infrastructure.Services
 
         public async Task RemoveSessionAsync(string playerId)
         {
-            // Limpiar sesión real
+            var db = _redis.GetDatabase();
+
+            // 1. Leer token via IDistributedCache (respeta prefijo y formato HASH)
             var sessionToken = await GetSessionAsync(playerId);
-            await _cache.RemoveAsync(BuildKey(playerId));
-            if (sessionToken != null) await _cache.RemoveAsync($"{TokenPrefix}{sessionToken}");
 
-            // Limpiar sesión de desarrollo si existe
-            await RemoveDevSessionAsync(playerId);
+            // 2. Reunir todas las llaves a invalidar en un lote único
+            //    Nota: IDistributedCache almacena con RedisInstancePrefix y formato HASH.
+            //    Para borrar usamos KeyDeleteAsync directo con el nombre completo de la key.
+            var keysToDelete = new List<RedisKey>
+            {
+                $"{RedisInstancePrefix}{KeyPrefix}{playerId}",
+                $"{RedisInstancePrefix}{DevKeyPrefix}{playerId}",
+                $"{InventoryPrefix}{playerId}",
+                $"{InventoryPrefix}{playerId}:empty_flag",
+                $"{SubscriptionPrefix}{playerId}",
+                $"player:sessions:{playerId}"
+            };
 
-            var playerGuid = Guid.Parse(playerId);
-            await InvalidatePlayerCosmeticsAsync(playerGuid);
-            await InvalidatePlayerSubscriptionAsync(playerGuid);
+            if (sessionToken != null)
+            {
+                keysToDelete.Add($"{RedisInstancePrefix}{TokenPrefix}{sessionToken}");
+                keysToDelete.Add($"{RedisInstancePrefix}{DevTokenPrefix}{sessionToken}");
+            }
+
+            // 3. Ejecutar borrado masivo por lotes en Redis (eficiente y atómico)
+            await db.KeyDeleteAsync(keysToDelete.ToArray());
         }
 
         public async Task<string?> GetPlayerIdBySessionAsync(string sessionToken)
@@ -202,13 +219,20 @@ namespace IceBackend.Infrastructure.Services
 
         public async Task RemoveDevSessionAsync(string playerId)
         {
+            var db = _redis.GetDatabase();
+            var keysToDelete = new List<RedisKey>
+            {
+                $"{RedisInstancePrefix}{DevKeyPrefix}{playerId}"
+            };
+
             var tokenBytes = await _cache.GetAsync($"{DevKeyPrefix}{playerId}");
             if (tokenBytes != null)
             {
                 var token = Encoding.UTF8.GetString(tokenBytes);
-                await _cache.RemoveAsync($"{DevTokenPrefix}{token}");
+                keysToDelete.Add($"{RedisInstancePrefix}{DevTokenPrefix}{token}");
             }
-            await _cache.RemoveAsync($"{DevKeyPrefix}{playerId}");
+
+            await db.KeyDeleteAsync(keysToDelete.ToArray());
         }
 
         public async Task PurgePlayerSessionsAsync(Guid playerId)
@@ -219,7 +243,7 @@ namespace IceBackend.Infrastructure.Services
 
             await db.ScriptEvaluateAsync(PurgeLuaScript.ExecutableScript,
                 keys: new RedisKey[] { sessionsIndexKey },
-                values: new RedisValue[] { nowUnix, TokenPrefix });
+                values: new RedisValue[] { nowUnix, $"{RedisInstancePrefix}{TokenPrefix}" });
 
             await InvalidatePlayerSubscriptionAsync(playerId);
         }

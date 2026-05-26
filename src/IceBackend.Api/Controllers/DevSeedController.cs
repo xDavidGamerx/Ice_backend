@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using IceBackend.Domain.Entities;
 using IceBackend.Domain.Enums;
@@ -30,9 +31,15 @@ namespace IceBackend.Api.Controllers
             if (!_env.IsDevelopment())
                 return NotFound();
 
-            // ── IDEMPOTENCIA: no sobrescribir datos existentes ──
-            if (await _dbContext.Players.AnyAsync())
-                return Conflict(new { message = "Base de datos ya sembrada. Omite este endpoint si ya tienes datos." });
+            // ── IDEMPOTENCIA: solo verificar cosméticos del seed (no bloquea si hay otros jugadores) ──
+            var seedCosmeticIds = new[]
+            {
+                new CosmeticId(Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")),
+                new CosmeticId(Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")),
+                new CosmeticId(Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"))
+            };
+            if (await _dbContext.CosmeticAssets.AnyAsync(c => seedCosmeticIds.Contains(c.Id)))
+                return Conflict(new { message = "Base de datos ya sembrada." });
 
             // ── DATOS DETERMINISTAS ──
             var player1Id = new PlayerId(Guid.Parse("00000000-0000-0000-0000-000000000001"));

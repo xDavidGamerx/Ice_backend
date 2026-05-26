@@ -169,6 +169,25 @@ builder.Services.AddHealthChecks()
 
 var app = builder.Build();
 
+// Auto-migrate database schema on startup (Migrate aplica migraciones pendientes)
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        try
+        {
+            db.Database.Migrate();
+            Log.Information("Database schema migrated successfully.");
+        }
+        catch (Exception ex)
+        {
+            Log.Fatal(ex, "Failed to migrate database schema on startup.");
+            throw; // Fail-Fast: la app no debe arrancar sin BD
+        }
+    }
+}
+
 // Configure the HTTP request pipeline.
 app.UseMiddleware<IceBackend.Api.Middleware.ExceptionHandlingMiddleware>();
 
