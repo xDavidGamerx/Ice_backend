@@ -72,5 +72,20 @@ namespace IceBackend.Application.Interfaces
         /// Invalida la clave de caché de la suscripción del jugador en Redis.
         /// </summary>
         Task InvalidatePlayerSubscriptionAsync(Guid playerId);
+
+        /// <summary>
+        /// Almacena el token de recuperación de contraseña asociado a un jugador con un TTL.
+        /// </summary>
+        Task SetPasswordResetTokenAsync(string playerId, string token, System.TimeSpan ttl);
+
+        /// <summary>
+        /// Obtiene el PlayerId asociado a un token de recuperación de contraseña, o null si no existe/expiró.
+        /// </summary>
+        Task<string?> GetPasswordResetTokenAsync(string token);
+
+        /// <summary>
+        /// Elimina (invalida) el token de recuperación de contraseña de la caché.
+        /// </summary>
+        Task InvalidatePasswordResetTokenAsync(string token);
     }
 }

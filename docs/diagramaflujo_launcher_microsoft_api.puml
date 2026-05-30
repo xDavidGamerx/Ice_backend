@@ -1,0 +1,67 @@
+@startuml
+autonumber
+skinparam Style strictuml
+skinparam BoxPadding 10
+skinparam ParticipantPadding 10
+
+box "Cliente (Usuario)" #LightBlue
+participant "Launcher\n(Electron/C#)" as Client
+end box
+
+box "Servicios Oficiales" #LightGray
+participant "Microsoft / Mojang\nOAuth & Services" as Mojang
+end box
+
+box "Infraestructura Propia" #LightYellow
+participant "Tu API\n(ASP.NET Core C#)" as API
+database "Tu Base de Datos\n(SQL Server/Postgres)" as DB
+end box
+
+== Flujo de Autenticación Local ==
+Client -> Mojang: Solicita Autenticación (OAuth2 / Refresh Token)
+activate Mojang
+Mojang --> Client: Retorna Minecraft Access Token (JWT) + UUID
+deactivate Mojang
+
+== Flujo de Vinculación y Sesión en Tu API ==
+Client -> API: POST /api/auth/login-minecraft\n{ uuid, minecraftToken }
+activate API
+
+    API -> Mojang: GET https://api.minecraftservices.com/minecraft/profile\nHeader: Authorization: Bearer <minecraftToken>
+    activate Mojang
+    Mojang --> API: Retorna Perfil (UUID, Username, Skin, etc.)
+    deactivate Mojang
+
+    alt Token es inválido o no coincide UUID
+        API --> Client: Retorna 401 Unauthorized
+    else Token es válido
+        API -> DB: Buscar usuario por UUID de Minecraft
+        activate DB
+        DB --> API: Retorna datos de usuario (si existe)
+        deactivate DB
+        
+        alt Usuario no existe en DB
+            API -> DB: Crear nuevo perfil asociado al UUID
+            activate DB
+            DB --> API: Confirmación de registro
+            deactivate DB
+        end
+        
+        API -> API: Generar JWT propio de tu API (firmado)
+        API -> DB: Obtener cosméticos activos del UUID
+        activate DB
+        DB --> API: Lista de cosméticos
+        deactivate DB
+        
+        API --> Client: Retorna 200 OK\n{ token: "Tu_JWT", cosmetics: [...] }
+    end
+deactivate API
+
+== Flujo de Juego y Uso de Servicios ==
+Note over Client: El Launcher inicia Minecraft usando\nel token oficial de Mojang obtenido en el paso 2.
+
+Client -> API: GET /api/cosmetics/equip\nHeader: Authorization: Bearer <Tu_JWT>
+activate API
+API --> Client: Aplica cosmético en la sesión
+deactivate API
+@endum

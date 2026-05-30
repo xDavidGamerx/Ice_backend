@@ -2,6 +2,17 @@
 
 Este archivo registra las modificaciones importantes, correcciones de errores y nuevas funcionalidades implementadas en el proyecto, junto con su justificación técnica.
 
+## [2026-05-29] - Flujo de Recuperación de Contraseña (Forgot/Reset) (Task 25 - HU-F1)
+
+### Añadido
+- **Endpoints de Recuperación de Contraseñas** (`src/IceBackend.Api/Controllers/AuthController.cs`): Implementados los endpoints públicos `/api/v1/auth/forgot-password` (solicitud de reset, anti-enumeración de usuarios, retorna el token en respuesta e imprime en logger) y `/api/v1/auth/reset-password` (actualización de clave mediante token válido, con validaciones estrictas de password de longitud mínima de 8 caracteres).
+- **Rate Limiting Local** (`src/IceBackend.Api/Controllers/AuthController.cs`): Registro de rate limiting local por IP a través de `IMemoryCache` en el endpoint de forgot-password (máximo 3 solicitudes por hora, retorna 429).
+- **AddMemoryCache en Startup** (`src/IceBackend.Api/Program.cs`): Configurado el servicio de caché en memoria nativo de ASP.NET en el contenedor de dependencias del API.
+
+### Corregido
+- **Persistencia de Reset Tokens** (`src/IceBackend.Infrastructure/Services/RedisSessionCache.cs`): Implementados métodos `SetPasswordResetTokenAsync`, `GetPasswordResetTokenAsync` e `InvalidatePasswordResetTokenAsync` directamente en la API de Redis (`db.StringSetAsync`) bajo el prefijo `pwd_reset:` para garantizar el borrado sin depender de `IDistributedCache`.
+- **Invalidación de Tokens (Single-Use)** (`src/IceBackend.Infrastructure/Services/AuthService.cs`): Implementado el borrado del token tras cambiar la contraseña de forma exitosa en Postgres, previniendo ataques de repetición.
+
 ## [2026-05-25] - Estabilización de DevSeed, Registro, Login y Logout Público de Cuentas ICE (Tasks 17, 19, 21, 22, 24)
 
 ### Añadido

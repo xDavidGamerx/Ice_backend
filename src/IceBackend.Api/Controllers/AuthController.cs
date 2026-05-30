@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using IceBackend.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace IceBackend.Api.Controllers
 {
@@ -18,11 +19,13 @@ namespace IceBackend.Api.Controllers
     {
         private readonly IAuthService _authService;
         private readonly ISessionCache _sessionCache;
+        private readonly IMemoryCache _memoryCache;
 
-        public AuthController(IAuthService authService, ISessionCache sessionCache)
+        public AuthController(IAuthService authService, ISessionCache sessionCache, IMemoryCache memoryCache)
         {
             _authService = authService;
             _sessionCache = sessionCache;
+            _memoryCache = memoryCache;
         }
 
         /// <summary>
@@ -87,6 +90,47 @@ namespace IceBackend.Api.Controllers
             await _sessionCache.RemoveSessionAsync(playerId.ToString());
             return Ok(new { message = "Session closed successfully." });
         }
+
+        private bool IsRateLimited(string ip)
+        {
+            var key = $"pwd_reset_rate:{ip}";
+            if (_memoryCache.TryGetValue(key, out int count) && count >= 3)
+                return true;
+
+            _memoryCache.Set(key, count + 1, TimeSpan.FromHours(1));
+            return false;
+        }
+
+        /// <summary>
+        /// Solicita la recuperación de contraseña de una cuenta ICE.
+        /// Retorna el token criptográfico para propósitos de desarrollo (HU-F1).
+        /// </summary>
+        [HttpPost("forgot-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+        {
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            if (IsRateLimited(ip))
+                return StatusCode(429, new { message = "Demasiadas solicitudes. Intenta de nuevo en una hora." });
+
+            var token = await _authService.RequestPasswordResetAsync(request.Username);
+            // Siempre 200 OK anti-user-enumeration.
+            return Ok(new { resetToken = token, message = "Si el usuario existe, se ha generado un token de recuperación." });
+        }
+
+        /// <summary>
+        /// Restablece la contraseña de una cuenta ICE utilizando un token válido.
+        /// </summary>
+        [HttpPost("reset-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            var success = await _authService.ResetPasswordAsync(request.Token, request.NewPassword);
+            if (!success)
+                return BadRequest(new { message = "El token es inválido o ha expirado." });
+
+            return Ok(new { message = "Contraseña actualizada exitosamente." });
+        }
     }
 
     public record RegisterRequest(
@@ -103,7 +147,19 @@ namespace IceBackend.Api.Controllers
     public record LoginRequest(
         [Required(ErrorMessage = "Username is required.")]
         string Username,
-
+ 
         [Required(ErrorMessage = "Password is required.")]
         string Password);
+
+    public record ForgotPasswordRequest(
+        [Required(ErrorMessage = "Username is required.")]
+        string Username);
+
+    public record ResetPasswordRequest(
+        [Required(ErrorMessage = "Token is required.")]
+        string Token,
+
+        [Required(ErrorMessage = "NewPassword is required.")]
+        [MinLength(8, ErrorMessage = "Password must be at least 8 characters long.")]
+        string NewPassword);
 }

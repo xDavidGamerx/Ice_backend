@@ -63,6 +63,7 @@ if (string.IsNullOrWhiteSpace(redisConn) || redisConn.Contains("YOUR_REDIS_CONNE
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddControllers();
+builder.Services.AddMemoryCache();
 
 // Configure CORS policy from configuration
 var allowedOrigins = builder.Configuration

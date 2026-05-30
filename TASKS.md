@@ -183,68 +183,126 @@ Tareas críticas para cerrar el ciclo de vida completo del usuario y los cosmét
       - **Archivos afectados**: `AuthController.cs`, `ISessionCache.cs`, `RedisSessionCache.cs`
       - **Descripción**: `POST /api/v1/auth/logout` — elimina la sesión actual de Redis. Requiere `[Authorize]` (Bearer token). Previene reuso del token.
 
+### Gestión de Cuenta
+
+25. - [x] **Flujo de recuperación de contraseña (forgot/reset) — HU-F1**
+      - **Prioridad**: Alta
+      - **Archivos afectados**: `AuthController.cs`, `IAuthService.cs`, `AuthService.cs`, `ISessionCache.cs`, `RedisSessionCache.cs`
+      - **Descripción**: 
+        - `POST /api/v1/auth/forgot-password` — público. Recibe `{ username }`. Siempre retorna 200 OK (exista o no el usuario — anti-user-enumeration). Rate limiting: 3 requests/hora por IP (retorna 429 si excede). Genera token criptográfico (32 bytes, base64) almacenado en Redis con TTL 15min bajo prefijo `pwd_reset:`. Retorna el token en respuesta para permitir el flujo sin email service (temporal hasta integrar emails). El token también se loggea a consola vía `ILogger` para debug.
+        - `POST /api/v1/auth/reset-password` — público. Recibe `{ token, newPassword }` (min 8 chars). Valida token en Redis, busca PlayerId, aplica bcrypt hash, actualiza BD, invalida token (single-use — previene replay). Retorna 200 OK si éxito, 400 si token inválido/expirado.
+
+26. - [ ] **Vincular/desvincular cuentas externas (Microsoft, Google) — HU-F5**
+      - **Prioridad**: Media
+      - **Archivos afectados**: `ExternalAuthController.cs`, `ExternalAuthService.cs`, `Player.cs`
+      - **Descripción**: `POST /api/v1/auth/link/{provider}` — inicia flujo OAuth para vincular una cuenta externa a un Player ICE existente. `POST /api/v1/auth/unlink/{provider}` — elimina el `ExternalAuth` correspondiente. `[Authorize]`. No permitir desvincular si es la única forma de acceso.
+
+27. - [ ] **Eliminar cuenta permanentemente — HU-F6**
+      - **Prioridad**: Media
+      - **Archivos afectados**: [NEW] `src/IceBackend.Api/Controllers/PlayerController.cs` o DELETE en `AuthController.cs`
+      - **Descripción**: `DELETE /api/v1/player/account` — elimina el Player y todos sus datos asociados (ownerships, suscripción, sesiones, payment events, external auths). Pide confirmación `{ confirmation: "DELETE" }`. Purga Redis. `[Authorize]`.
+
+28. - [ ] **Historial de sesiones activas — HU-F7**
+      - **Prioridad**: Baja
+      - **Archivos afectados**: `RedisSessionCache.cs`, `ISessionCache.cs`
+      - **Descripción**: `GET /api/v1/auth/sessions` — lista sesiones activas del jugador (dispositivo, IP, createdAt, expiresAt). `DELETE /api/v1/auth/sessions/{id}` — cierra una sesión remota específica. `[Authorize]`.
+
 ### Sistema de Roles (Admin)
 
-25. - [ ] **Agregar flag `IsAdmin` a la entidad Player y migración**
+29. - [ ] **Agregar flag `IsAdmin` a la entidad Player y migración**
       - **Prioridad**: Crítica
       - **Archivos afectados**: `Player.cs`, `PlayerConfiguration.cs`, migración EF Core
       - **Descripción**: Agregar `IsAdmin` (bool, default false) a `Player`. Crear migración. Configurar `IAuthorizationService` con política `"AdminOnly"` que verifique `player.IsAdmin`. Crear guardia de desarrollo para el primer admin vía `appsettings.Development.json` o variable de entorno.
 
-26. - [ ] **Middleware / filtro de autorización para rutas admin**
+30. - [ ] **Middleware / filtro de autorización para rutas admin**
       - **Prioridad**: Alta
       - **Archivos afectados**: [NEW] `src/IceBackend.Infrastructure/Authorization/AdminRequirement.cs`, `src/IceBackend.Api/Program.cs`
       - **Descripción**: Implementar `AuthorizationHandler<AdminRequirement>` que cargue `IsAdmin` desde Redis o BD y verifique contra el claim. Registrar política global. Usar `[Authorize(Policy = "AdminOnly")]` en controladores de administración.
 
 ### Perfil de Usuario
 
-27. - [ ] **Endpoint de edición de perfil del jugador**
+31. - [ ] **Endpoint de edición de perfil del jugador**
       - **Prioridad**: Alta
       - **Archivos afectados**: [NEW] `src/IceBackend.Api/Controllers/PlayerController.cs`, [NEW] `src/IceBackend.Application/UseCases/Player/UpdatePlayerProfileUseCase.cs`
       - **Descripción**: `PUT /api/v1/player/profile` — permite cambiar `Username` (con validación de unicidad), `DisplayName` (nuevo campo opcional si no existe, agregarlo a Player). Para cuentas ICE, permitir cambio de password enviando `{ oldPassword, newPassword }`. Purga caché de sesión tras cambios críticos.
 
-28. - [ ] **Endpoint de consulta de perfil propio**
+32. - [ ] **Endpoint de consulta de perfil propio**
       - **Prioridad**: Media
       - **Archivos afectados**: `PlayerController.cs`
       - **Descripción**: `GET /api/v1/player/profile` — retorna datos del jugador autenticado: `{ id, username, uuidType, isMcPremium, isAdmin, createdAt }`. Sin exponer `PasswordHash`.
 
 ### CRUD Completo de Cosméticos (Admin)
 
-29. - [ ] **Endpoint admin: Crear cosmético con subida de archivo**
+33. - [ ] **Endpoint admin: Crear cosmético con subida de archivo**
       - **Prioridad**: Crítica
       - **Archivos afectados**: [NEW] `src/IceBackend.Api/Controllers/AdminCosmeticsController.cs`, [NEW] `src/IceBackend.Application/UseCases/AdminCosmetics/CreateCosmeticUseCase.cs`
       - **Descripción**: `POST /api/v1/admin/cosmetics` — recibe `multipart/form-data` con archivo binario, `CosmeticType`, `DisplayName`. Backend: calcula SHA256, guarda `CosmeticAsset` + `CosmeticAssetVersion`, opcionalmente sube a CDN. Protegido con `[Authorize(Policy = "AdminOnly")]`.
 
-30. - [ ] **Endpoint admin: Editar cosmético**
+34. - [ ] **Endpoint admin: Editar cosmético**
       - **Prioridad**: Alta
       - **Archivos afectados**: `AdminCosmeticsController.cs`, [NEW] `src/IceBackend.Application/UseCases/AdminCosmetics/UpdateCosmeticUseCase.cs`
       - **Descripción**: `PUT /api/v1/admin/cosmetics/{id}` — modificar `DisplayName`, `CosmeticType`. No permite cambiar el UUID ni el InternalId. Validar que el cosmético existe.
 
-31. - [ ] **Endpoint admin: Eliminar cosmético**
+35. - [ ] **Endpoint admin: Eliminar cosmético**
       - **Prioridad**: Alta
       - **Archivos afectados**: `AdminCosmeticsController.cs`, [NEW] `src/IceBackend.Application/UseCases/AdminCosmetics/DeleteCosmeticUseCase.cs`
       - **Descripción**: `DELETE /api/v1/admin/cosmetics/{id}` — elimina lógicamente o físicamente el cosmético. Verificar que ningún jugador tenga ownership activo. Si tiene ownerships activos, rechazar o forzar reasignación.
 
-32. - [ ] **Endpoint público: Listar catálogo de cosméticos**
+36. - [ ] **Endpoint público: Listar catálogo de cosméticos**
       - **Prioridad**: Media
       - **Archivos afectados**: [NEW] `src/IceBackend.Api/Controllers/CosmeticsController.cs`
       - **Descripción**: `GET /api/v1/cosmetics` — lista todos los cosméticos disponibles con metadatos básicos (id, type, displayName, thumbnail url). Filtrable por tipo. Sin autenticación requerida (catálogo público).
 
-### Asignación de Cosméticos a Usuarios
+### Asignación de Cosméticos e Inventario
 
-33. - [ ] **Endpoint admin: Asignar cosmético a jugador**
+37. - [ ] **Endpoint admin: Asignar cosmético a jugador**
       - **Prioridad**: Alta
       - **Archivos afectados**: `AdminCosmeticsController.cs` o [NEW] `src/IceBackend.Api/Controllers/AdminOwnershipController.cs`, [NEW] `src/IceBackend.Application/UseCases/AdminCosmetics/GrantCosmeticUseCase.cs`
       - **Descripción**: `POST /api/v1/admin/ownerships` — recibe `{ playerId, cosmeticId, reason }`. Crea `PlayerCosmeticOwnership` en BD. Purga caché de inventario del jugador. Protegido con `[Authorize(Policy = "AdminOnly")]`.
 
-34. - [ ] **Webhook `checkout.session.completed` de Stripe (compra de cosméticos)**
+38. - [ ] **Endpoint público: Ver inventario propio — HU-F14**
+      - **Prioridad**: Alta
+      - **Archivos afectados**: [NEW] `src/IceBackend.Api/Controllers/InventoryController.cs` o GET en el existente
+      - **Descripción**: `GET /api/v1/inventory` — retorna todos los cosméticos que posee el jugador autenticado: `{ cosmeticId, type, displayName, acquiredAt, equipped }`. Usa `IsCosmeticOwnedAsync` + consulta a BD. `[Authorize]`.
+
+39. - [ ] **Endpoint de canje / asignación gratuita**
+      - **Prioridad**: Media
+      - **Archivos afectados**: [NEW] `src/IceBackend.Api/Controllers/RedeemController.cs`
+      - **Descripción**: `POST /api/v1/redeem` — el jugador envía un código promocional y recibe un cosmético. Crea `PlayerCosmeticOwnership` y purga caché. Sin autenticación si es código de invitación, con auth si es canje de recompensa.
+
+### Pagos y Stripe
+
+40. - [ ] **Webhook `checkout.session.completed` de Stripe (compra de cosméticos)**
       - **Prioridad**: Alta
       - **Archivos afectados**: `StripeWebhookService.cs`
       - **Descripción**: Procesar `checkout.session.completed` para crear `PlayerCosmeticOwnership` cuando un jugador compra un cosmético individual. Metadata: `{ playerId, cosmeticId }`. Misma lógica de idempotencia que `invoice.paid`.
 
-35. - [ ] **Endpoint de canje / asignación gratuita**
+### Suscripción ICE+
+
+41. - [ ] **Endpoint: Iniciar compra de suscripción ICE+ — HU-F18**
+      - **Prioridad**: Alta
+      - **Archivos afectados**: [NEW] `IceBackend.Application/UseCases/Subscription/CreateCheckoutSessionUseCase.cs`, `StripeWebhookService.cs`
+      - **Descripción**: `POST /api/v1/subscription/checkout` — crea una `CheckoutSession` de Stripe para ICE+. Retorna `{ checkoutUrl }`. Recibe `{ priceId }` o usa el precio por defecto. `[Authorize]`.
+
+42. - [ ] **Endpoint: Cancelar suscripción ICE+ — HU-F19**
+      - **Prioridad**: Alta
+      - **Archivos afectados**: `SubscriptionController.cs`, `StripeWebhookService.cs`
+      - **Descripción**: `POST /api/v1/subscription/cancel` — desactiva `autoRenew` en Stripe mediante la API de cancelación al final del período. Marca `AutoRenew = false` en BD. `[Authorize]`. Verificar que el jugador tenga suscripción activa.
+
+43. - [ ] **Endpoint: Cambiar plan de suscripción — HU-F20**
       - **Prioridad**: Media
-      - **Archivos afectados**: [NEW] `src/IceBackend.Api/Controllers/RedeemController.cs`
-      - **Descripción**: `POST /api/v1/redeem` — el jugador envía un código promocional y recibe un cosmético. Crea `PlayerCosmeticOwnership` y purga caché. Sin autenticación si es código de invitación, con auth si es canje de recompensa.
+      - **Archivos afectados**: `SubscriptionController.cs`
+      - **Descripción**: `PUT /api/v1/subscription/plan` — recibe `{ newPriceId }`. Actualiza la suscripción en Stripe (prorrateo). Persiste cambio en BD. `[Authorize]`.
+
+44. - [ ] **Endpoint: Historial de pagos ICE+ — HU-F21**
+      - **Prioridad**: Media
+      - **Archivos afectados**: [NEW] `src/IceBackend.Application/Queries/PaymentHistoryQueryService.cs`
+      - **Descripción**: `GET /api/v1/subscription/payments` — lista `PaymentEvent` del jugador: `{ id, amount, currency, status, providerEventId, createdAt }`. `[Authorize]`.
+
+45. - [ ] **Asignación automática del emote mensual (webhook) — HU-F22**
+      - **Prioridad**: Media
+      - **Archivos afectados**: `StripeWebhookService.cs` (lógica en `HandleInvoicePaidAsync`)
+      - **Descripción**: Al procesar `invoice.paid` de ICE+, incrementar el contador de meses y asignar automáticamente un `PlayerCosmeticOwnership` del emote mensual correspondiente al mes actual. Usar metadatos del rango de fechas.
 
 ---
 
@@ -253,34 +311,35 @@ Tareas críticas para cerrar el ciclo de vida completo del usuario y los cosmét
 Tareas enfocadas en cerrar el ciclo de vida de los cosméticos existentes y limpiar inconsistencias acumuladas. Depende de la Fase 5 para tener sentido de negocio completo.
 
 ### Bugs Activos
-36. - [ ] **Agregar versiones cosméticas con hash al DevSeed**
+
+46. - [ ] **Agregar versiones cosméticas con hash al DevSeed**
       - **Prioridad**: Alta (desbloquea request-delivery)
       - **Archivos afectados**: `DevSeedController.cs`
       - **Descripción**: Crear 3 `CosmeticAssetVersion` con SHA256 deterministas para cada cosmético del seed. Esto permite probar el flujo completo: `seed → login → request-delivery → deliver`. Sin versiones, `GetCosmeticIdByHashAsync` siempre retorna null.
 
-37. - [ ] **Endpoint GET callback para OAuth desde navegador**
+47. - [ ] **Endpoint GET callback para OAuth desde navegador**
       - **Prioridad**: Media (testing)
       - **Archivos afectados**: `ExternalAuthController.cs`, `ExternalAuthService.cs`
       - **Descripción**: Agregar `GET /api/auth/external/google/callback` que reciba el redirect de Google directamente (sin launcher), muestre una página HTML con el sessionToken, o renderice un JSON. Permite probar OAuth local sin Electron.
 
 ### Deuda Técnica e Inconsistencias
 
-38. - [ ] **Unificar versionado de rutas en todos los controladores**
+48. - [ ] **Unificar versionado de rutas en todos los controladores**
       - **Prioridad**: Media
       - **Archivos afectados**: `WebhooksController.cs`, `ExternalAuthController.cs`
       - **Descripción**: `WebhooksController` usa `api/[controller]` (token replacement). `ExternalAuthController` usa `api/auth/external` (sin versión). Estandarizar a `api/v1/webhooks` y `api/v1/auth/external/...` para mantener consistencia con el resto.
 
-39. - [ ] **Agregar [Required] y validaciones a DTOs de entrada**
+49. - [ ] **Agregar [Required] y validaciones a DTOs de entrada**
       - **Prioridad**: Media
       - **Archivos afectados**: `AssetDeliveryController.cs` (`RequestDeliveryBody`), `InventoryController.cs` (`EquipRequest`, `UnequipRequest`), `ExternalAuthController.cs` (`ExternalCallbackRequest`)
       - **Descripción**: Varios DTOs carecen de `[Required]` o `[StringLength]`, lo que permite requests inválidas con valores por defecto (Guid.Empty, 0). Agregar data annotations para mejorar Swagger docs y validación temprana.
 
-40. - [ ] **Corregir logging de Serilog en Docker (stdout no visible)**
+50. - [ ] **Corregir logging de Serilog en Docker (stdout no visible)**
       - **Prioridad**: Media
       - **Archivos afectados**: `Program.cs`, `appsettings.json`
       - **Descripción**: Las trazas de Serilog (`ILogger<T>`) no aparecen en `docker logs ice_api`. Solo se ve el bootstrap logger. Revisar configuración de sinks y flushing para que los logs estructurados sean visibles en stdout del contenedor.
 
-41. - [ ] **Agregar `[JsonConverter(typeof(JsonStringEnumConverter))]` a enums de DTOs**
+51. - [ ] **Agregar `[JsonConverter(typeof(JsonStringEnumConverter))]` a enums de DTOs**
       - **Prioridad**: Baja
       - **Archivos afectados**: `InventoryController.cs`, enums compartidos
       - **Descripción**: `CosmeticType` en `EquipRequest` se serializa como entero por defecto. Configurar `JsonStringEnumConverter` global o por propiedad para que Swagger muestre nombres legibles y el cliente pueda enviar `"hat"` en vez de `0`.

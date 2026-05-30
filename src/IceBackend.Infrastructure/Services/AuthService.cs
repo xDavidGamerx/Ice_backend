@@ -7,6 +7,7 @@ using IceBackend.Domain.Entities;
 using IceBackend.Domain.Enums;
 using IceBackend.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace IceBackend.Infrastructure.Services
@@ -17,17 +18,20 @@ namespace IceBackend.Infrastructure.Services
         private readonly ISessionCache _sessionCache;
         private readonly IPasswordHasher _passwordHasher;
         private readonly TimeSpan _sessionTtl;
+        private readonly ILogger<AuthService> _logger;
 
         public AuthService(
             ApplicationDbContext dbContext,
             ISessionCache sessionCache,
             IOptionsSnapshot<AuthOptions> authOptions,
-            IPasswordHasher passwordHasher)
+            IPasswordHasher passwordHasher,
+            ILogger<AuthService> logger)
         {
             _dbContext = dbContext;
             _sessionCache = sessionCache;
             _passwordHasher = passwordHasher;
             _sessionTtl = TimeSpan.FromHours(authOptions.Value.SessionTtlHours);
+            _logger = logger;
         }
 
         public async Task<Player> RegisterIceAccountAsync(string username, string password)
@@ -139,6 +143,38 @@ namespace IceBackend.Infrastructure.Services
                 await transaction.RollbackAsync();
                 throw;
             }
+        }
+
+        public async Task<string?> RequestPasswordResetAsync(string username)
+        {
+            var player = await _dbContext.Players
+                .FirstOrDefaultAsync(p => p.Username.ToLower() == username.ToLower() && p.UuidType == UuidType.ICE);
+            if (player == null)
+            {
+                _logger.LogWarning("Password reset requested for non-existent username: {Username}", username);
+                return null;
+            }
+
+            var token = GenerateSecureToken();
+            await _sessionCache.SetPasswordResetTokenAsync(player.Id.ToString(), token, TimeSpan.FromMinutes(15));
+            _logger.LogInformation("DEV MODE: Reset token for {Username} is {Token}", username, token);
+            return token;
+        }
+
+        public async Task<bool> ResetPasswordAsync(string token, string newPassword)
+        {
+            var playerIdStr = await _sessionCache.GetPasswordResetTokenAsync(token);
+            if (string.IsNullOrEmpty(playerIdStr) || !Guid.TryParse(playerIdStr, out var playerId))
+                return false;
+
+            var player = await _dbContext.Players.FindAsync(new PlayerId(playerId));
+            if (player == null)
+                return false;
+
+            player.UpdatePasswordHash(_passwordHasher.Hash(newPassword));
+            await _dbContext.SaveChangesAsync();
+            await _sessionCache.InvalidatePasswordResetTokenAsync(token);
+            return true;
         }
 
         private static string GenerateSecureToken()

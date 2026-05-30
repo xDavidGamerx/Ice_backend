@@ -9,5 +9,7 @@ namespace IceBackend.Application.Interfaces
         Task<Player> RegisterIceAccountAsync(string username, string password);
         Task<(Player Player, string SessionToken)?> LoginIceAccountAsync(string username, string password);
         Task<(Player Player, string SessionToken)> RegisterAndLoginAsync(string username, string password);
+        Task<string?> RequestPasswordResetAsync(string username);
+        Task<bool> ResetPasswordAsync(string token, string newPassword);
     }
 }

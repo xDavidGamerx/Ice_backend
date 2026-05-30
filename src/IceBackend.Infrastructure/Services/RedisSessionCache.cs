@@ -28,6 +28,7 @@ namespace IceBackend.Infrastructure.Services
         private const string InventoryPrefix = "inventory:player:";
         private const string HashMappingPrefix = "asset:hash:";
         private const string SubscriptionPrefix = "subscription:player:";
+        private const string PwdResetPrefix = "pwd_reset:";
         
         // TTL para el inventario en caché (1 hora por defecto, se refresca con actividad)
         private readonly TimeSpan _inventoryTtl = TimeSpan.FromHours(1);
@@ -302,6 +303,25 @@ namespace IceBackend.Infrastructure.Services
         {
             var db = _redis.GetDatabase();
             await db.KeyDeleteAsync($"{SubscriptionPrefix}{playerId}");
+        }
+
+        public async Task SetPasswordResetTokenAsync(string playerId, string token, TimeSpan ttl)
+        {
+            var db = _redis.GetDatabase();
+            await db.StringSetAsync($"{PwdResetPrefix}{token}", playerId, ttl);
+        }
+
+        public async Task<string?> GetPasswordResetTokenAsync(string token)
+        {
+            var db = _redis.GetDatabase();
+            var result = await db.StringGetAsync($"{PwdResetPrefix}{token}");
+            return result.HasValue ? result.ToString() : null;
+        }
+
+        public async Task InvalidatePasswordResetTokenAsync(string token)
+        {
+            var db = _redis.GetDatabase();
+            await db.KeyDeleteAsync($"{PwdResetPrefix}{token}");
         }
 
         private static string BuildKey(string playerId) => $"{KeyPrefix}{playerId}";
