@@ -87,5 +87,19 @@ namespace IceBackend.Application.Interfaces
         /// Elimina (invalida) el token de recuperación de contraseña de la caché.
         /// </summary>
         Task InvalidatePasswordResetTokenAsync(string token);
+
+        /// <summary>
+        /// Obtiene todas las sesiones activas (no expiradas) de un jugador desde Redis.
+        /// Retorna lista de SessionInfo con tokenHash (SHA-1) y expiresAt (Unix timestamp).
+        /// </summary>
+        Task<List<SessionInfo>> GetSessionsAsync(string playerId);
+
+        /// <summary>
+        /// Elimina una sesión específica por su tokenHash (SHA-1).
+        /// Retorna true si la sesión fue encontrada y eliminada.
+        /// </summary>
+        Task<bool> RemoveSessionByTokenHashAsync(string playerId, string tokenHash);
     }
+
+    public record SessionInfo(string TokenHash, long ExpiresAtUnix, bool IsCurrent);
 }

@@ -131,6 +131,39 @@ namespace IceBackend.Api.Controllers
 
             return Ok(new { message = "Contraseña actualizada exitosamente." });
         }
+
+        /// <summary>
+        /// Lista las sesiones activas del jugador autenticado.
+        /// </summary>
+        [HttpGet("sessions")]
+        [Authorize]
+        public async Task<IActionResult> GetSessions()
+        {
+            var playerIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (playerIdClaim == null || !Guid.TryParse(playerIdClaim.Value, out _))
+                return Unauthorized();
+
+            var sessions = await _sessionCache.GetSessionsAsync(playerIdClaim.Value);
+            return Ok(new { sessions });
+        }
+
+        /// <summary>
+        /// Cierra una sesión específica por su tokenHash (SHA-1).
+        /// </summary>
+        [HttpDelete("sessions/{tokenHash}")]
+        [Authorize]
+        public async Task<IActionResult> DeleteSession(string tokenHash)
+        {
+            var playerIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (playerIdClaim == null || !Guid.TryParse(playerIdClaim.Value, out _))
+                return Unauthorized();
+
+            var removed = await _sessionCache.RemoveSessionByTokenHashAsync(playerIdClaim.Value, tokenHash);
+            if (!removed)
+                return NotFound(new { message = "Sesión no encontrada." });
+
+            return Ok(new { message = "Sesión cerrada exitosamente." });
+        }
     }
 
     public record RegisterRequest(

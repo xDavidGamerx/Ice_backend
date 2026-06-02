@@ -2,6 +2,17 @@
 
 Este archivo registra las modificaciones importantes, correcciones de errores y nuevas funcionalidades implementadas en el proyecto, junto con su justificación técnica.
 
+## [2026-06-01] - Gestión de Sesiones Activas y Cierre Remoto (Task 26 - HU-F7)
+
+### Añadido
+- **Endpoints de Gestión de Sesiones** (`src/IceBackend.Api/Controllers/AuthController.cs`): Implementados endpoints `GET /api/v1/auth/sessions` (para listar sesiones del jugador autenticado) y `DELETE /api/v1/auth/sessions/{tokenHash}` (para eliminar/cerrar sesión remota).
+- **Abstracciones de Cache** (`src/IceBackend.Application/Interfaces/ISessionCache.cs`): Declarados los métodos de contrato `GetSessionsAsync` y `RemoveSessionByTokenHashAsync` y el record `SessionInfo`.
+- **Implementación en Redis** (`src/IceBackend.Infrastructure/Services/RedisSessionCache.cs`): Implementados los métodos usando el script Lua `RemoveByHashLuaScript` para el borrado atómico del token del ZSET e invalidación inversa, y `SortedSetRangeByScoreWithScoresAsync` para recuperar sesiones vigentes.
+- **Suite de Pruebas de Integración** (`tests/IceBackend.IntegrationTests/Auth/SessionTests.cs`): Creados tests de integración automatizados que validan el flujo completo de listado de sesiones, siembra manual para simulación concurrente, cierre remoto e invalidación de acceso.
+
+### Corregido
+- **Constructor de AuthService en Tests Unitarios** (`tests/IceBackend.UnitTests/AuthServiceTests.cs`): Inyectado mock de `ILogger<AuthService>` en la instanciación para reparar la rotura del build de pruebas unitarias causada por los cambios de la Task 25.
+
 ## [2026-05-29] - Flujo de Recuperación de Contraseña (Forgot/Reset) (Task 25 - HU-F1)
 
 ### Añadido

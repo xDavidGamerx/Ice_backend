@@ -59,6 +59,20 @@ namespace IceBackend.Infrastructure.Services
 
             return #activeTokens");
 
+        private static readonly LuaScript RemoveByHashLuaScript = LuaScript.Prepare(@"
+            -- KEYS[1] = player:sessions:{playerId}
+            -- ARGV[1] = tokenHash buscado (SHA-1 en minúsculas)
+            -- ARGV[2] = ""IceLauncher:session:token:"" (prefijo para token keys)
+            local members = redis.call('ZRANGE', KEYS[1], 0, -1)
+            for i, token in ipairs(members) do
+                if redis.sha1hex(token) == ARGV[1] then
+                    redis.call('ZREM', KEYS[1], token)
+                    redis.call('UNLINK', ARGV[2] .. token)
+                    return token
+                end
+            end
+            return false");
+
         public RedisSessionCache(
             IDistributedCache cache, 
             IConnectionMultiplexer redis,
@@ -322,6 +336,60 @@ namespace IceBackend.Infrastructure.Services
         {
             var db = _redis.GetDatabase();
             await db.KeyDeleteAsync($"{PwdResetPrefix}{token}");
+        }
+
+        public async Task<List<SessionInfo>> GetSessionsAsync(string playerId)
+        {
+            var db = _redis.GetDatabase();
+            var sessionsIndexKey = $"player:sessions:{playerId}";
+            var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+            var entries = await db.SortedSetRangeByScoreWithScoresAsync(
+                sessionsIndexKey, now, double.PositiveInfinity, Exclude.None, Order.Ascending);
+
+            // Leer token actual para marcar IsCurrent
+            var currentToken = await GetSessionAsync(playerId);
+
+            return entries.Select(e =>
+            {
+                var token = e.Element.ToString();
+                var tokenHash = ComputeSha1(token);
+                return new SessionInfo(tokenHash, (long)e.Score, token == currentToken);
+            }).ToList();
+        }
+
+        public async Task<bool> RemoveSessionByTokenHashAsync(string playerId, string tokenHash)
+        {
+            var db = _redis.GetDatabase();
+            var sessionsIndexKey = $"player:sessions:{playerId}";
+            var tokenPrefix = $"{RedisInstancePrefix}{TokenPrefix}";
+
+            var result = await db.ScriptEvaluateAsync(RemoveByHashLuaScript.ExecutableScript,
+                keys: new RedisKey[] { sessionsIndexKey },
+                values: new RedisValue[] { tokenHash, tokenPrefix });
+
+            if (result.IsNull) return false;
+
+            var deletedToken = result.ToString();
+
+            // Si el token eliminado es la sesión actual, también limpiar session:player:{id}
+            var currentToken = await GetSessionAsync(playerId);
+            if (currentToken == deletedToken)
+            {
+                await db.KeyDeleteAsync($"{RedisInstancePrefix}{KeyPrefix}{playerId}");
+                await db.KeyDeleteAsync($"{RedisInstancePrefix}{DevKeyPrefix}{playerId}");
+                await db.KeyDeleteAsync($"{InventoryPrefix}{playerId}");
+                await db.KeyDeleteAsync($"{InventoryPrefix}{playerId}:empty_flag");
+                await db.KeyDeleteAsync($"{SubscriptionPrefix}{playerId}");
+            }
+
+            return true;
+        }
+
+        private static string ComputeSha1(string input)
+        {
+            var bytes = System.Security.Cryptography.SHA1.HashData(Encoding.UTF8.GetBytes(input));
+            return Convert.ToHexString(bytes).ToLower();
         }
 
         private static string BuildKey(string playerId) => $"{KeyPrefix}{playerId}";

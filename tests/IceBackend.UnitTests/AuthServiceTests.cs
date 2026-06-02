@@ -59,7 +59,7 @@ namespace IceBackend.UnitTests
             cacheMock ??= BuildSessionCacheMock();
             var options = DefaultAuthOptions();
             var hasher = new BcryptPasswordHasher(options);
-            return new AuthService(ctx, cacheMock.Object, options, hasher);
+            return new AuthService(ctx, cacheMock.Object, options, hasher, new Mock<Microsoft.Extensions.Logging.ILogger<AuthService>>().Object);
         }
 
         // ── Register ─────────────────────────────────────────────────────────────
